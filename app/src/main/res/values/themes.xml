@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Androdash" parent="android:Theme.Material.NoTitleBar.Fullscreen" />
+    <style name="Theme.Androdash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+    </style>
 </resources>
