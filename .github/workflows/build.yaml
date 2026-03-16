@@ -43,20 +43,31 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
+      - name: Build release APK
+        run: ./gradlew assembleRelease
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
 
+      - name: Upload unsigned release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+
   sign:
     needs: build
     if: ${{ secrets.SIGNING_KEYSTORE_BASE64 != '' }}
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -65,31 +76,51 @@ jobs:
       - name: Download debug APK
         uses: actions/download-artifact@v4
         with:
-          name: app-debug
+          name: app-release-unsigned
 
-      - name: Set up signing keystore
-        run: |
-          echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > "${{ runner.temp }}/release.keystore"
-
-      - name: Strip and sign APK
+      - name: Sign release APK
         env:
-          SIGNING_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
           SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
+          echo "$SIGNING_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
           BUILD_TOOLS_DIR=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
-          "$BUILD_TOOLS_DIR/zipalign" -v -p 4 app-debug.apk app-release-aligned.apk
+          "$BUILD_TOOLS_DIR/zipalign" -v -p 4 app-release-unsigned.apk app-release-aligned.apk
           "$BUILD_TOOLS_DIR/apksigner" sign \
-            --ks "$SIGNING_KEYSTORE_PATH" \
+            --ks "$RUNNER_TEMP/release.keystore" \
             --ks-pass "pass:$SIGNING_KEYSTORE_PASSWORD" \
             --ks-key-alias "$SIGNING_KEY_ALIAS" \
             --key-pass "pass:$SIGNING_KEY_PASSWORD" \
-            --out app-release.apk \
+            --out androdash-release.apk \
             app-release-aligned.apk
 
-      - name: Upload release APK
+      - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: app-release.apk
+          name: app-release-signed
+          path: androdash-release.apk
+
+      - name: Create development pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="dev-$(date +%Y%m%d-%H%M%S)"
+          SHORT_SHA="${GITHUB_SHA::7}"
+
+          # Delete previous dev release if it exists
+          gh release delete dev-latest --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          git push origin :refs/tags/dev-latest 2>/dev/null || true
+
+          gh release create "dev-latest" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Development Build" \
+            --notes "Latest development build from \`main\` branch.
+
+          **Commit:** ${SHORT_SHA}
+          **Date:** $(date -u +%Y-%m-%d\ %H:%M\ UTC)
+
+          > This pre-release is automatically updated on every push to main." \
+            --prerelease \
+            androdash-release.apk

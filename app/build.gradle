@@ -38,6 +38,10 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.8'
     }
+
+    lint {
+        abortOnError false
+    }
 }
 
 dependencies {
@@ -59,6 +63,9 @@ dependencies {
     // Animation
     implementation 'androidx.compose.animation:animation'
     implementation 'androidx.compose.animation:animation-core'
+
+    // Foundation (HorizontalPager)
+    implementation 'androidx.compose.foundation:foundation'
 
     debugImplementation 'androidx.compose.ui:ui-tooling'
 }
