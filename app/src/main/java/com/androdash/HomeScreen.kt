@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 
 data class AppInfo(
     val label: String,
@@ -43,14 +44,30 @@ data class AppInfo(
     val installTime: Long = 0L,
 )
 
+@Suppress("DEPRECATION")
 private fun loadInstalledApps(pm: PackageManager): List<AppInfo> {
     val intent = Intent(Intent.ACTION_MAIN).apply {
         addCategory(Intent.CATEGORY_LAUNCHER)
     }
-    return pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
+    val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        pm.queryIntentActivities(
+            intent,
+            PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()),
+        )
+    } else {
+        pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
+    }
+    return resolveInfos
         .map { ri ->
             val installTime = try {
-                pm.getPackageInfo(ri.activityInfo.packageName, 0).firstInstallTime
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    pm.getPackageInfo(
+                        ri.activityInfo.packageName,
+                        PackageManager.PackageInfoFlags.of(0),
+                    ).firstInstallTime
+                } else {
+                    pm.getPackageInfo(ri.activityInfo.packageName, 0).firstInstallTime
+                }
             } catch (_: PackageManager.NameNotFoundException) {
                 0L
             }
@@ -87,12 +104,17 @@ fun HomeScreen() {
             addDataScheme("package")
         }
         val receiver = object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context, intent: Intent?) {
+            override fun onReceive(ctx: Context, intent: Intent) {
                 allApps = loadInstalledApps(ctx.packageManager)
                 hiddenPackages = hiddenRepo.getHiddenPackages()
             }
         }
-        context.registerReceiver(receiver, filter)
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            filter,
+            ContextCompat.RECEIVER_EXPORTED,
+        )
         onDispose { context.unregisterReceiver(receiver) }
     }
 
