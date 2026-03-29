@@ -50,6 +50,11 @@ public class LetterBar {
         updateButtons();
     }
 
+    public void updateApps(List<AppModel> apps) {
+        this.allApps = apps;
+        updateButtons();
+    }
+
     public void setOnFilterChangedListener(OnFilterChangedListener listener) {
         this.listener = listener;
     }
