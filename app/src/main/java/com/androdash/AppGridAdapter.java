@@ -44,6 +44,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public interface OnConfigToggleListener {
         void onShowAllAppsChanged(boolean showAll);
         void onLetterSortChanged(boolean usageSort);
+        void onLetterBarPositionChanged(int position);
     }
 
     public interface OnAppHiddenChangedListener {
@@ -54,6 +55,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final Context context;
     private final HiddenAppsStore hiddenAppsStore;
     private final LetterSortStore letterSortStore;
+    private final LetterBarPositionStore letterBarPositionStore;
     private boolean configMode = false;
     private boolean showAllApps = false;
     private OnConfigToggleListener configToggleListener;
@@ -61,10 +63,12 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private boolean isUpdating = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    public AppGridAdapter(Context context, HiddenAppsStore hiddenAppsStore, LetterSortStore letterSortStore) {
+    public AppGridAdapter(Context context, HiddenAppsStore hiddenAppsStore,
+                          LetterSortStore letterSortStore, LetterBarPositionStore letterBarPositionStore) {
         this.context = context;
         this.hiddenAppsStore = hiddenAppsStore;
         this.letterSortStore = letterSortStore;
+        this.letterBarPositionStore = letterBarPositionStore;
     }
 
     public void setOnConfigToggleListener(OnConfigToggleListener listener) {
@@ -189,6 +193,17 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
         } else if (position == 2) {
+            int pos = letterBarPositionStore.getPosition();
+            holder.label.setText("Letterbar: " + letterBarPositionStore.getArrow(pos));
+            holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
+            holder.itemView.setOnClickListener(v -> {
+                int newPos = letterBarPositionStore.nextPosition();
+                holder.label.setText("Letterbar: " + letterBarPositionStore.getArrow(newPos));
+                if (configToggleListener != null) {
+                    configToggleListener.onLetterBarPositionChanged(newPos);
+                }
+            });
+        } else if (position == 3) {
             holder.label.setText("Version: " + BuildConfig.GIT_HASH);
             holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
             holder.itemView.setOnClickListener(v -> {
@@ -342,7 +357,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        if (configMode) return 3;
+        if (configMode) return 4;
         return apps.size();
     }
 
