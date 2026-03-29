@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="corner_radius">16dp</dimen>
+    <dimen name="text_size_small">18sp</dimen>
+    <dimen name="text_size_medium">22sp</dimen>
+    <dimen name="text_size_large">28sp</dimen>
+    <dimen name="letter_button_size">56dp</dimen>
+    <dimen name="app_card_height">64dp</dimen>
+    <dimen name="app_icon_size">48dp</dimen>
+    <dimen name="card_padding">8dp</dimen>
+    <dimen name="grid_spacing">6dp</dimen>
+    <dimen name="letter_bar_padding">4dp</dimen>
+    <dimen name="letter_button_margin">3dp</dimen>
+</resources>
