@@ -10,7 +10,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.WindowCompat;
+
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
         HorizontalScrollView scrollView = findViewById(R.id.letterScroll);
