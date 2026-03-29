@@ -116,6 +116,13 @@ public class LetterBar {
         });
     }
 
+    public boolean removeLastLetter() {
+        if (selectedLetters.isEmpty()) return false;
+        selectedLetters.remove(selectedLetters.size() - 1);
+        updateButtons();
+        return true;
+    }
+
     private void onSelectedLetterClick(int index) {
         // Remove this letter and all after it
         while (selectedLetters.size() > index) {
