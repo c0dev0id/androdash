@@ -9,8 +9,12 @@ import android.os.Bundle;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 
-import androidx.appcompat.app.AppCompatActivity;
+import android.view.View;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -40,6 +44,18 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         hiddenAppsStore = new HiddenAppsStore(this);
+
+        View rootView = findViewById(R.id.rootLayout);
+        int baseSpacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(
+                    insets.left + baseSpacing,
+                    insets.top + baseSpacing,
+                    insets.right + baseSpacing,
+                    insets.bottom + baseSpacing);
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         HorizontalScrollView scrollView = findViewById(R.id.letterScroll);
         LinearLayout letterContainer = findViewById(R.id.letterContainer);
