@@ -43,6 +43,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public interface OnConfigToggleListener {
         void onShowAllAppsChanged(boolean showAll);
+        void onLetterSortChanged(boolean usageSort);
     }
 
     public interface OnAppHiddenChangedListener {
@@ -52,6 +53,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final List<AppModel> apps = new ArrayList<>();
     private final Context context;
     private final HiddenAppsStore hiddenAppsStore;
+    private final LetterSortStore letterSortStore;
     private boolean configMode = false;
     private boolean showAllApps = false;
     private OnConfigToggleListener configToggleListener;
@@ -59,9 +61,10 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private boolean isUpdating = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    public AppGridAdapter(Context context, HiddenAppsStore hiddenAppsStore) {
+    public AppGridAdapter(Context context, HiddenAppsStore hiddenAppsStore, LetterSortStore letterSortStore) {
         this.context = context;
         this.hiddenAppsStore = hiddenAppsStore;
+        this.letterSortStore = letterSortStore;
     }
 
     public void setOnConfigToggleListener(OnConfigToggleListener listener) {
@@ -171,6 +174,21 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
         } else if (position == 1) {
+            boolean usageSort = letterSortStore.isUsageSort();
+            holder.label.setText(usageSort ? "Lettersort: Usage" : "Lettersort: ABC");
+            holder.itemView.setBackgroundResource(
+                    usageSort ? R.drawable.bg_button_selected : R.drawable.bg_app_card);
+            holder.itemView.setOnClickListener(v -> {
+                boolean newState = !letterSortStore.isUsageSort();
+                letterSortStore.setUsageSort(newState);
+                holder.label.setText(newState ? "Lettersort: Usage" : "Lettersort: ABC");
+                holder.itemView.setBackgroundResource(
+                        newState ? R.drawable.bg_button_selected : R.drawable.bg_app_card);
+                if (configToggleListener != null) {
+                    configToggleListener.onLetterSortChanged(newState);
+                }
+            });
+        } else if (position == 2) {
             holder.label.setText("Version: " + BuildConfig.GIT_HASH);
             holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
             holder.itemView.setOnClickListener(v -> {
@@ -324,7 +342,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        if (configMode) return 2;
+        if (configMode) return 3;
         return apps.size();
     }
 
