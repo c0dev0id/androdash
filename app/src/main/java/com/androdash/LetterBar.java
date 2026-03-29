@@ -10,7 +10,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
-import android.widget.HorizontalScrollView;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import java.util.ArrayList;
@@ -32,13 +32,13 @@ public class LetterBar {
 
     private final Context context;
     private final LinearLayout container;
-    private final HorizontalScrollView scrollView;
+    private final ViewGroup scrollView;
     private List<AppModel> allApps;
     private final List<Character> selectedLetters = new ArrayList<>();
     private OnFilterChangedListener listener;
     private LetterSortStore letterSortStore;
 
-    public LetterBar(Context context, LinearLayout container, HorizontalScrollView scrollView) {
+    public LetterBar(Context context, LinearLayout container, ViewGroup scrollView) {
         this.context = context;
         this.container = container;
         this.scrollView = scrollView;
@@ -65,6 +65,12 @@ public class LetterBar {
 
     public boolean isConfigMode() {
         return selectedLetters.contains(GEAR_CHAR);
+    }
+
+    public void enterConfigMode() {
+        selectedLetters.clear();
+        selectedLetters.add(GEAR_CHAR);
+        updateButtons();
     }
 
     public List<AppModel> getFilteredApps() {
