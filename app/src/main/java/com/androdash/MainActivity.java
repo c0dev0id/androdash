@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private LetterBar letterBar;
     private List<AppModel> allApps;
     private HiddenAppsStore hiddenAppsStore;
+    private LetterSortStore letterSortStore;
     private boolean showAllApps = false;
     private boolean wasConfigMode = false;
 
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         hiddenAppsStore = new HiddenAppsStore(this);
+        letterSortStore = new LetterSortStore(this);
 
         View rootView = findViewById(R.id.rootLayout);
         int baseSpacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
@@ -61,18 +63,28 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout letterContainer = findViewById(R.id.letterContainer);
         appGrid = findViewById(R.id.appGrid);
 
-        adapter = new AppGridAdapter(this, hiddenAppsStore);
+        adapter = new AppGridAdapter(this, hiddenAppsStore, letterSortStore);
         appGrid.setAdapter(adapter);
         setupGridLayout();
 
-        adapter.setOnConfigToggleListener(showAll -> {
-            this.showAllApps = showAll;
-            adapter.setShowAllApps(showAll);
+        adapter.setOnConfigToggleListener(new AppGridAdapter.OnConfigToggleListener() {
+            @Override
+            public void onShowAllAppsChanged(boolean showAll) {
+                showAllApps = showAll;
+                adapter.setShowAllApps(showAll);
+            }
+
+            @Override
+            public void onLetterSortChanged(boolean usageSort) {
+                // Sort mode is already persisted by LetterSortStore;
+                // no additional action needed since LetterBar reads it on rebuild
+            }
         });
 
         adapter.setOnAppHiddenChangedListener(() -> refreshDisplayedApps());
 
         letterBar = new LetterBar(this, letterContainer, scrollView);
+        letterBar.setLetterSortStore(letterSortStore);
         letterBar.setOnFilterChangedListener(filteredApps -> {
             boolean inConfig = letterBar.isConfigMode();
             if (inConfig != wasConfigMode) {

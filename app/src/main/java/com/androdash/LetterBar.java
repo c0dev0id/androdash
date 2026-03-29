@@ -29,6 +29,7 @@ public class LetterBar {
     private List<AppModel> allApps;
     private final List<Character> selectedLetters = new ArrayList<>();
     private OnFilterChangedListener listener;
+    private LetterSortStore letterSortStore;
 
     public LetterBar(Context context, LinearLayout container, HorizontalScrollView scrollView) {
         this.context = context;
@@ -48,6 +49,10 @@ public class LetterBar {
 
     public void setOnFilterChangedListener(OnFilterChangedListener listener) {
         this.listener = listener;
+    }
+
+    public void setLetterSortStore(LetterSortStore store) {
+        this.letterSortStore = store;
     }
 
     public boolean isConfigMode() {
@@ -116,7 +121,11 @@ public class LetterBar {
 
             // Sort available letters
             List<Character> sorted = new ArrayList<>(nextChars);
-            Collections.sort(sorted);
+            if (letterSortStore != null && letterSortStore.isUsageSort()) {
+                sorted = letterSortStore.getSortedLetters(prefix.length(), sorted);
+            } else {
+                Collections.sort(sorted);
+            }
 
             // Add available letter buttons
             for (Character c : sorted) {
@@ -160,6 +169,9 @@ public class LetterBar {
     }
 
     private void onAvailableLetterClick(Character c) {
+        if (letterSortStore != null && letterSortStore.isUsageSort() && c != GEAR_CHAR) {
+            letterSortStore.recordSelection(selectedLetters.size(), c);
+        }
         selectedLetters.add(c);
         updateButtons();
     }
