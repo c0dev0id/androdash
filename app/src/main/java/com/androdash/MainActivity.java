@@ -31,11 +31,12 @@ public class MainActivity extends AppCompatActivity {
     private LetterSortStore letterSortStore;
     private boolean showAllApps = false;
     private boolean wasConfigMode = false;
+    private boolean appsDirty = false;
 
     private final BroadcastReceiver packageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            reloadApps();
+            appsDirty = true;
         }
     };
 
@@ -142,12 +143,14 @@ public class MainActivity extends AppCompatActivity {
         letterBar.setApps(allApps);
     }
 
-    private void reloadApps() {
-        allApps = AppLoader.loadApps(this);
-        letterBar.updateApps(allApps);
-    }
-
     private void refreshDisplayedApps() {
+        if (appsDirty) {
+            appsDirty = false;
+            allApps = AppLoader.loadApps(this);
+            letterBar.updateApps(allApps);
+            return;
+        }
+
         List<AppModel> letterFiltered = letterBar.getFilteredApps();
         if (!showAllApps) {
             List<AppModel> visible = new ArrayList<>();
