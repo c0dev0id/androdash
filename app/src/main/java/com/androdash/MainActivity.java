@@ -96,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        // Launcher should not go back
+        // Act as backspace: unselect last selected letter
+        letterBar.removeLastLetter();
     }
 }

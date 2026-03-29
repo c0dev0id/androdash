@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Androdash" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowFullscreen">false</item>
         <item name="android:fontFamily">@font/apotek</item>
         <item name="fontFamily">@font/apotek</item>
         <item name="android:colorBackground">@color/background_dark</item>
