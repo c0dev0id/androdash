@@ -6,12 +6,21 @@ android {
     namespace 'com.androdash'
     compileSdk 35
 
+    buildFeatures {
+        buildConfig true
+    }
+
     defaultConfig {
         applicationId "com.androdash"
         minSdk 34
         targetSdk 35
         versionCode 1
         versionName "1.0"
+
+        def gitHash = providers.exec {
+            commandLine 'git', 'rev-parse', '--short=7', 'HEAD'
+        }.standardOutput.asText.get().trim()
+        buildConfigField "String", "GIT_HASH", "\"${gitHash}\""
     }
 
     buildTypes {
