@@ -1,18 +1,25 @@
 package com.androdash;
 
-import android.animation.LayoutTransition;
 import android.content.Context;
 import android.graphics.Typeface;
+import android.transition.ChangeBounds;
+import android.transition.Fade;
+import android.transition.TransitionManager;
+import android.transition.TransitionSet;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class LetterBar {
@@ -34,10 +41,6 @@ public class LetterBar {
         this.context = context;
         this.container = container;
         this.scrollView = scrollView;
-
-        LayoutTransition lt = new LayoutTransition();
-        lt.enableTransitionType(LayoutTransition.CHANGING);
-        container.setLayoutTransition(lt);
     }
 
     public void setApps(List<AppModel> apps) {
@@ -76,36 +79,34 @@ public class LetterBar {
         return sb.toString();
     }
 
-    private void updateButtons() {
-        if (container.getChildCount() > 0) {
-            // Crossfade: same animation used for the app grid
-            container.animate().alpha(0f).setDuration(150).withEndAction(() -> {
-                rebuildButtons();
-                container.animate().alpha(1f).setDuration(150).start();
-            }).start();
-        } else {
-            rebuildButtons();
+    private static class ButtonSpec {
+        final String tag;
+        final char letter;
+        final boolean selected;
+        final int selectedIndex; // -1 for available buttons
+
+        ButtonSpec(String tag, char letter, boolean selected, int selectedIndex) {
+            this.tag = tag;
+            this.letter = letter;
+            this.selected = selected;
+            this.selectedIndex = selectedIndex;
         }
     }
 
-    private void rebuildButtons() {
-        container.removeAllViews();
-
+    private List<ButtonSpec> computeTargetButtons() {
+        List<ButtonSpec> target = new ArrayList<>();
         boolean inConfig = isConfigMode();
 
-        // Add selected (fixed) letter buttons
+        // Selected buttons
         for (int i = 0; i < selectedLetters.size(); i++) {
-            Button btn = createLetterButton(selectedLetters.get(i), true);
-            final int index = i;
-            btn.setOnClickListener(v -> onSelectedLetterClick(index));
-            container.addView(btn);
+            char c = selectedLetters.get(i);
+            target.add(new ButtonSpec("s:" + i + ":" + c, c, true, i));
         }
 
         if (!inConfig) {
             String prefix = getPrefix();
             List<AppModel> matching = getFilteredApps();
 
-            // Collect unique next characters
             Set<Character> nextChars = new LinkedHashSet<>();
             for (AppModel app : matching) {
                 String upper = app.label.toUpperCase();
@@ -114,21 +115,87 @@ public class LetterBar {
                 }
             }
 
-            // Sort available letters
             List<Character> sorted = new ArrayList<>(nextChars);
             Collections.sort(sorted);
 
-            // Add available letter buttons
             for (Character c : sorted) {
-                Button btn = createLetterButton(c, false);
-                btn.setOnClickListener(v -> onAvailableLetterClick(c));
-                container.addView(btn);
+                target.add(new ButtonSpec("a:" + c, c, false, -1));
             }
 
-            // Add gear button at the end (always available when not in config)
-            Button gearBtn = createLetterButton(GEAR_CHAR, false);
-            gearBtn.setOnClickListener(v -> onAvailableLetterClick(GEAR_CHAR));
-            container.addView(gearBtn);
+            // Gear button
+            target.add(new ButtonSpec("a:" + GEAR_CHAR, GEAR_CHAR, false, -1));
+        }
+
+        return target;
+    }
+
+    private void updateButtons() {
+        List<ButtonSpec> target = computeTargetButtons();
+
+        if (container.getChildCount() > 0) {
+            // Animate: fade out removed, slide persisting, fade in new
+            TransitionSet transition = new TransitionSet();
+            transition.setOrdering(TransitionSet.ORDERING_SEQUENTIAL);
+            transition.addTransition(new Fade(Fade.OUT).setDuration(150));
+            transition.addTransition(new ChangeBounds().setDuration(200));
+            transition.addTransition(new Fade(Fade.IN).setDuration(150));
+            TransitionManager.beginDelayedTransition(container, transition);
+        }
+
+        // Map existing buttons by tag
+        Map<String, Button> existingByTag = new LinkedHashMap<>();
+        for (int i = 0; i < container.getChildCount(); i++) {
+            Button btn = (Button) container.getChildAt(i);
+            String tag = (String) btn.getTag();
+            if (tag != null) {
+                existingByTag.put(tag, btn);
+            }
+        }
+
+        // Determine target tags
+        Set<String> targetTags = new HashSet<>();
+        for (ButtonSpec spec : target) {
+            targetTags.add(spec.tag);
+        }
+
+        // Remove buttons not in target (iterate backwards for stable indices)
+        for (int i = container.getChildCount() - 1; i >= 0; i--) {
+            View child = container.getChildAt(i);
+            String tag = (String) child.getTag();
+            if (tag == null || !targetTags.contains(tag)) {
+                container.removeViewAt(i);
+            }
+        }
+
+        // Add new buttons and ensure correct ordering
+        for (int i = 0; i < target.size(); i++) {
+            ButtonSpec spec = target.get(i);
+            Button existing = existingByTag.get(spec.tag);
+
+            if (existing != null) {
+                // Persisting button — update appearance if needed
+                existing.setBackgroundResource(
+                        spec.selected ? R.drawable.bg_button_selected : R.drawable.bg_button);
+
+                // Ensure it's at the correct position
+                int currentPos = container.indexOfChild(existing);
+                if (currentPos != i) {
+                    container.removeView(existing);
+                    container.addView(existing, Math.min(i, container.getChildCount()));
+                }
+            } else {
+                // New button
+                Button btn = createLetterButton(spec.letter, spec.selected);
+                btn.setTag(spec.tag);
+                if (spec.selected) {
+                    final int index = spec.selectedIndex;
+                    btn.setOnClickListener(v -> onSelectedLetterClick(index));
+                } else {
+                    final char letter = spec.letter;
+                    btn.setOnClickListener(v -> onAvailableLetterClick(letter));
+                }
+                container.addView(btn, Math.min(i, container.getChildCount()));
+            }
         }
 
         // Notify listener
