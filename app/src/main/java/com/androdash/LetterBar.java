@@ -77,6 +77,18 @@ public class LetterBar {
     }
 
     private void updateButtons() {
+        if (container.getChildCount() > 0) {
+            // Crossfade: same animation used for the app grid
+            container.animate().alpha(0f).setDuration(150).withEndAction(() -> {
+                rebuildButtons();
+                container.animate().alpha(1f).setDuration(150).start();
+            }).start();
+        } else {
+            rebuildButtons();
+        }
+    }
+
+    private void rebuildButtons() {
         container.removeAllViews();
 
         boolean inConfig = isConfigMode();
