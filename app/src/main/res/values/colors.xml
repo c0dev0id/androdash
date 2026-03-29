@@ -10,4 +10,5 @@
     <color name="text_secondary">#B0B0B0</color>
     <color name="highlight_top">#1CFFFFFF</color>
     <color name="shadow_bottom">#14000000</color>
+    <color name="progress_fill">#40F57C00</color>
 </resources>
