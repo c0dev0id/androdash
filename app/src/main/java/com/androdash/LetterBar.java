@@ -21,6 +21,8 @@ public class LetterBar {
         void onFilterChanged(List<AppModel> filteredApps);
     }
 
+    private static final char GEAR_CHAR = '\u2699';
+
     private final Context context;
     private final LinearLayout container;
     private final HorizontalScrollView scrollView;
@@ -48,6 +50,10 @@ public class LetterBar {
         this.listener = listener;
     }
 
+    public boolean isConfigMode() {
+        return selectedLetters.contains(GEAR_CHAR);
+    }
+
     public List<AppModel> getFilteredApps() {
         String prefix = getPrefix();
         if (prefix.isEmpty()) return new ArrayList<>(allApps);
@@ -64,6 +70,7 @@ public class LetterBar {
     private String getPrefix() {
         StringBuilder sb = new StringBuilder();
         for (Character c : selectedLetters) {
+            if (c == GEAR_CHAR) continue;
             sb.append(c);
         }
         return sb.toString();
@@ -72,8 +79,7 @@ public class LetterBar {
     private void updateButtons() {
         container.removeAllViews();
 
-        String prefix = getPrefix();
-        List<AppModel> matching = getFilteredApps();
+        boolean inConfig = isConfigMode();
 
         // Add selected (fixed) letter buttons
         for (int i = 0; i < selectedLetters.size(); i++) {
@@ -83,24 +89,34 @@ public class LetterBar {
             container.addView(btn);
         }
 
-        // Collect unique next characters
-        Set<Character> nextChars = new LinkedHashSet<>();
-        for (AppModel app : matching) {
-            String upper = app.label.toUpperCase();
-            if (upper.length() > prefix.length()) {
-                nextChars.add(upper.charAt(prefix.length()));
+        if (!inConfig) {
+            String prefix = getPrefix();
+            List<AppModel> matching = getFilteredApps();
+
+            // Collect unique next characters
+            Set<Character> nextChars = new LinkedHashSet<>();
+            for (AppModel app : matching) {
+                String upper = app.label.toUpperCase();
+                if (upper.length() > prefix.length()) {
+                    nextChars.add(upper.charAt(prefix.length()));
+                }
             }
-        }
 
-        // Sort available letters
-        List<Character> sorted = new ArrayList<>(nextChars);
-        Collections.sort(sorted);
+            // Sort available letters
+            List<Character> sorted = new ArrayList<>(nextChars);
+            Collections.sort(sorted);
 
-        // Add available letter buttons
-        for (Character c : sorted) {
-            Button btn = createLetterButton(c, false);
-            btn.setOnClickListener(v -> onAvailableLetterClick(c));
-            container.addView(btn);
+            // Add available letter buttons
+            for (Character c : sorted) {
+                Button btn = createLetterButton(c, false);
+                btn.setOnClickListener(v -> onAvailableLetterClick(c));
+                container.addView(btn);
+            }
+
+            // Add gear button at the end (always available when not in config)
+            Button gearBtn = createLetterButton(GEAR_CHAR, false);
+            gearBtn.setOnClickListener(v -> onAvailableLetterClick(GEAR_CHAR));
+            container.addView(gearBtn);
         }
 
         // Notify listener
@@ -139,9 +155,9 @@ public class LetterBar {
     private Button createLetterButton(char letter, boolean selected) {
         Button btn = new Button(context);
         btn.setText(String.valueOf(letter));
-        btn.setAllCaps(true);
+        btn.setAllCaps(letter != GEAR_CHAR);
         btn.setTextColor(context.getColor(R.color.text_primary));
-        btn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+        btn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 35);
         btn.setTypeface(btn.getTypeface(), Typeface.BOLD);
         btn.setGravity(Gravity.CENTER);
         btn.setStateListAnimator(null); // Remove default elevation animation
