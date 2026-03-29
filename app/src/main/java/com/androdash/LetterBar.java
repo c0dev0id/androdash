@@ -144,7 +144,7 @@ public class LetterBar {
         if (container.getChildCount() > 0) {
             // Animate: fade out removed, slide persisting, fade in new
             TransitionSet transition = new TransitionSet();
-            transition.setOrdering(TransitionSet.ORDERING_SEQUENTIAL);
+            transition.setOrdering(TransitionSet.ORDERING_TOGETHER);
             transition.addTransition(new Fade(Fade.OUT).setDuration(150));
             transition.addTransition(new ChangeBounds().setDuration(200));
             transition.addTransition(new Fade(Fade.IN).setDuration(150));
