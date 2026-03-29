@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -22,6 +23,9 @@ public class MainActivity extends AppCompatActivity {
     private AppGridAdapter adapter;
     private LetterBar letterBar;
     private List<AppModel> allApps;
+    private HiddenAppsStore hiddenAppsStore;
+    private boolean showAllApps = false;
+    private boolean wasConfigMode = false;
 
     private final BroadcastReceiver packageReceiver = new BroadcastReceiver() {
         @Override
@@ -35,16 +39,42 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        hiddenAppsStore = new HiddenAppsStore(this);
+
         HorizontalScrollView scrollView = findViewById(R.id.letterScroll);
         LinearLayout letterContainer = findViewById(R.id.letterContainer);
         appGrid = findViewById(R.id.appGrid);
 
-        adapter = new AppGridAdapter(this);
+        adapter = new AppGridAdapter(this, hiddenAppsStore);
         appGrid.setAdapter(adapter);
         setupGridLayout();
 
+        adapter.setOnConfigToggleListener(showAll -> {
+            this.showAllApps = showAll;
+            adapter.setShowAllApps(showAll);
+        });
+
+        adapter.setOnAppHiddenChangedListener(() -> refreshDisplayedApps());
+
         letterBar = new LetterBar(this, letterContainer, scrollView);
-        letterBar.setOnFilterChangedListener(filteredApps -> adapter.updateApps(filteredApps));
+        letterBar.setOnFilterChangedListener(filteredApps -> {
+            boolean inConfig = letterBar.isConfigMode();
+            if (inConfig != wasConfigMode) {
+                // Mode changed — crossfade
+                wasConfigMode = inConfig;
+                appGrid.animate().alpha(0f).setDuration(150).withEndAction(() -> {
+                    if (inConfig) {
+                        adapter.setConfigMode(true);
+                    } else {
+                        adapter.setConfigMode(false);
+                        refreshDisplayedApps();
+                    }
+                    appGrid.animate().alpha(1f).setDuration(150).start();
+                }).start();
+            } else if (!inConfig) {
+                refreshDisplayedApps();
+            }
+        });
 
         refreshApps();
         registerPackageReceiver();
@@ -84,6 +114,21 @@ public class MainActivity extends AppCompatActivity {
         letterBar.setApps(allApps);
     }
 
+    private void refreshDisplayedApps() {
+        List<AppModel> letterFiltered = letterBar.getFilteredApps();
+        if (!showAllApps) {
+            List<AppModel> visible = new ArrayList<>();
+            for (AppModel app : letterFiltered) {
+                if (!hiddenAppsStore.isHidden(app.packageName)) {
+                    visible.add(app);
+                }
+            }
+            adapter.updateApps(visible);
+        } else {
+            adapter.updateApps(letterFiltered);
+        }
+    }
+
     private void registerPackageReceiver() {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -95,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        // Act as backspace: unselect last selected letter
+        // Act as backspace: unselect last selected letter (or gear)
         letterBar.removeLastLetter();
     }
 }
