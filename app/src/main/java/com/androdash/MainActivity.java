@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private final BroadcastReceiver packageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            refreshApps();
+            reloadApps();
         }
     };
 
@@ -140,6 +140,11 @@ public class MainActivity extends AppCompatActivity {
     private void refreshApps() {
         allApps = AppLoader.loadApps(this);
         letterBar.setApps(allApps);
+    }
+
+    private void reloadApps() {
+        allApps = AppLoader.loadApps(this);
+        letterBar.updateApps(allApps);
     }
 
     private void refreshDisplayedApps() {
