@@ -1,6 +1,6 @@
 package com.androdash;
 
-import android.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -83,7 +83,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<AppGridAdapter.ViewHold
 
     private void showAppMenu(AppModel app) {
         String[] options = {"Hide", "Uninstall", "App Info", "Cancel"};
-        new AlertDialog.Builder(context, com.google.android.material.R.style.ThemeOverlay_Material3_MaterialAlertDialog)
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(app.label)
                 .setItems(options, (dialog, which) -> {
                     switch (which) {
