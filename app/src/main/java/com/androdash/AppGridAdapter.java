@@ -428,9 +428,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         TextView btnUninstall = dialogView.findViewById(R.id.btnUninstall);
         btnUninstall.setOnClickListener(v -> {
-            Intent uninstall = new Intent(Intent.ACTION_UNINSTALL_PACKAGE,
+            Intent uninstall = new Intent(Intent.ACTION_DELETE,
                     Uri.parse("package:" + app.packageName));
-            uninstall.putExtra(Intent.EXTRA_RETURN_RESULT, true);
             context.startActivity(uninstall);
             dialog.dismiss();
         });
