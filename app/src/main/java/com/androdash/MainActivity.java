@@ -23,8 +23,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -320,6 +322,20 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+        if (!historyList.isEmpty()) {
+            Set<String> historyPackages = new HashSet<>();
+            for (AppModel app : historyList) {
+                historyPackages.add(app.packageName);
+            }
+            List<AppModel> deduped = new ArrayList<>();
+            for (AppModel app : displayApps) {
+                if (!historyPackages.contains(app.packageName)) {
+                    deduped.add(app);
+                }
+            }
+            displayApps = deduped;
+        }
+
         adapter.setHistoryApps(historyList);
         adapter.updateApps(displayApps);
     }
