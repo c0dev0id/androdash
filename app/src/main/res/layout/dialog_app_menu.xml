@@ -60,9 +60,7 @@
 
             <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:scrollbarFadingEnabled="true"
-                android:verticalScrollBarEnabled="false">
+                android:layout_height="wrap_content">
 
                 <LinearLayout
                     android:id="@+id/shortcutContainer"
