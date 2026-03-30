@@ -1,22 +1,29 @@
 package com.androdash;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.LauncherApps;
+import android.content.pm.ShortcutInfo;
 import android.graphics.drawable.ClipDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
+import android.os.Process;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.RecyclerView;
@@ -392,38 +399,136 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     private void showAppMenu(AppModel app) {
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_app_menu, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
+                .setView(dialogView)
+                .create();
+
+        // Header
+        ImageView headerIcon = dialogView.findViewById(R.id.dialogAppIcon);
+        TextView headerLabel = dialogView.findViewById(R.id.dialogAppLabel);
+        headerIcon.setImageDrawable(app.icon);
+        headerLabel.setText(app.label);
+
+        // Right column: action buttons
         boolean isHidden = hiddenAppsStore.isHidden(app.packageName);
-        String[] options = {isHidden ? "Show" : "Hide", "Uninstall", "App Info", "Cancel"};
-        new MaterialAlertDialogBuilder(context)
-                .setTitle(app.label)
-                .setItems(options, (dialog, which) -> {
-                    switch (which) {
-                        case 0: // Hide or Show
-                            if (isHidden) {
-                                hiddenAppsStore.showApp(app.packageName);
-                            } else {
-                                hiddenAppsStore.hideApp(app.packageName);
-                            }
-                            if (appHiddenChangedListener != null) {
-                                appHiddenChangedListener.onAppHiddenChanged();
-                            }
-                            break;
-                        case 1: // Uninstall
-                            Intent uninstall = new Intent(Intent.ACTION_DELETE,
-                                    Uri.parse("package:" + app.packageName));
-                            context.startActivity(uninstall);
-                            break;
-                        case 2: // App Info
-                            Intent info = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                    Uri.parse("package:" + app.packageName));
-                            context.startActivity(info);
-                            break;
-                        case 3: // Cancel
+
+        TextView btnHideShow = dialogView.findViewById(R.id.btnHideShow);
+        btnHideShow.setText(isHidden ? "Show" : "Hide");
+        btnHideShow.setOnClickListener(v -> {
+            if (isHidden) {
+                hiddenAppsStore.showApp(app.packageName);
+            } else {
+                hiddenAppsStore.hideApp(app.packageName);
+            }
+            if (appHiddenChangedListener != null) {
+                appHiddenChangedListener.onAppHiddenChanged();
+            }
+            dialog.dismiss();
+        });
+
+        TextView btnUninstall = dialogView.findViewById(R.id.btnUninstall);
+        btnUninstall.setOnClickListener(v -> {
+            Intent uninstall = new Intent(Intent.ACTION_UNINSTALL_PACKAGE,
+                    Uri.parse("package:" + app.packageName));
+            uninstall.putExtra(Intent.EXTRA_RETURN_RESULT, true);
+            context.startActivity(uninstall);
+            dialog.dismiss();
+        });
+
+        TextView btnAppInfo = dialogView.findViewById(R.id.btnAppInfo);
+        btnAppInfo.setOnClickListener(v -> {
+            Intent info = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + app.packageName));
+            context.startActivity(info);
+            dialog.dismiss();
+        });
+
+        TextView btnCancel = dialogView.findViewById(R.id.btnCancel);
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        // Left column: app shortcuts
+        LinearLayout shortcutContainer = dialogView.findViewById(R.id.shortcutContainer);
+        TextView noShortcutsText = dialogView.findViewById(R.id.noShortcutsText);
+        View leftColumn = dialogView.findViewById(R.id.leftColumn);
+
+        LauncherApps launcherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
+        boolean hasShortcuts = false;
+
+        if (launcherApps != null && launcherApps.hasShortcutHostPermission()) {
+            try {
+                LauncherApps.ShortcutQuery query = new LauncherApps.ShortcutQuery();
+                query.setPackage(app.packageName);
+                query.setQueryFlags(
+                        LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC
+                                | LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST);
+
+                List<ShortcutInfo> shortcuts = launcherApps.getShortcuts(query, Process.myUserHandle());
+
+                if (shortcuts != null && !shortcuts.isEmpty()) {
+                    hasShortcuts = true;
+                    int spacing = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
+
+                    for (int i = 0; i < shortcuts.size(); i++) {
+                        ShortcutInfo shortcut = shortcuts.get(i);
+                        View item = LayoutInflater.from(context)
+                                .inflate(R.layout.item_shortcut, shortcutContainer, false);
+
+                        ImageView icon = item.findViewById(R.id.shortcutIcon);
+                        TextView label = item.findViewById(R.id.shortcutLabel);
+
+                        Drawable shortcutIcon = launcherApps.getShortcutIconDrawable(shortcut,
+                                context.getResources().getDisplayMetrics().densityDpi);
+                        if (shortcutIcon != null) {
+                            icon.setImageDrawable(shortcutIcon);
+                        } else {
+                            icon.setImageDrawable(app.icon);
+                        }
+
+                        CharSequence shortLabel = shortcut.getShortLabel();
+                        label.setText(shortLabel != null ? shortLabel : "");
+
+                        item.setOnClickListener(v -> {
+                            launcherApps.startShortcut(shortcut, null, null);
                             dialog.dismiss();
-                            break;
+                        });
+
+                        if (i > 0) {
+                            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) item.getLayoutParams();
+                            if (lp == null) {
+                                lp = new LinearLayout.LayoutParams(
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                        context.getResources().getDimensionPixelSize(R.dimen.app_card_height));
+                            }
+                            lp.topMargin = spacing;
+                            item.setLayoutParams(lp);
+                        }
+
+                        shortcutContainer.addView(item);
                     }
-                })
-                .show();
+                }
+            } catch (Exception e) {
+                // Shortcut query failed, show fallback
+            }
+        }
+
+        if (!hasShortcuts) {
+            noShortcutsText.setVisibility(View.VISIBLE);
+            if (launcherApps == null || !launcherApps.hasShortcutHostPermission()) {
+                noShortcutsText.setText("Set as default launcher\nfor shortcuts");
+            }
+        }
+
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
+            window.setAttributes(params);
+        }
     }
 
     static class AppViewHolder extends RecyclerView.ViewHolder {

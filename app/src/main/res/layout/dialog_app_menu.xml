@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Header: app icon + label -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:id="@+id/dialogAppIcon"
+            android:layout_width="@dimen/app_icon_size"
+            android:layout_height="@dimen/app_icon_size"
+            android:scaleType="fitCenter"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/dialogAppLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/card_padding"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_size_large"
+            android:fontFamily="@font/apotek" />
+
+    </LinearLayout>
+
+    <!-- Body: two columns -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Left column: shortcuts -->
+        <LinearLayout
+            android:id="@+id/leftColumn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginEnd="@dimen/grid_spacing">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Shortcuts"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek"
+                android:layout_marginBottom="@dimen/grid_spacing" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbarFadingEnabled="true"
+                android:verticalScrollBarEnabled="false">
+
+                <LinearLayout
+                    android:id="@+id/shortcutContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/noShortcutsText"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/app_card_height"
+                android:background="@drawable/bg_button"
+                android:gravity="center"
+                android:text="No shortcuts"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Right column: action buttons -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="@dimen/grid_spacing">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Options"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek"
+                android:layout_marginBottom="@dimen/grid_spacing" />
+
+            <TextView
+                android:id="@+id/btnHideShow"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/app_card_height"
+                android:background="@drawable/bg_button"
+                android:gravity="center"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek"
+                android:layout_marginBottom="@dimen/grid_spacing" />
+
+            <TextView
+                android:id="@+id/btnUninstall"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/app_card_height"
+                android:background="@drawable/bg_button"
+                android:gravity="center"
+                android:text="Uninstall"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek"
+                android:layout_marginBottom="@dimen/grid_spacing" />
+
+            <TextView
+                android:id="@+id/btnAppInfo"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/app_card_height"
+                android:background="@drawable/bg_button"
+                android:gravity="center"
+                android:text="App Info"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek"
+                android:layout_marginBottom="@dimen/grid_spacing" />
+
+            <TextView
+                android:id="@+id/btnCancel"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/app_card_height"
+                android:background="@drawable/bg_button"
+                android:gravity="center"
+                android:text="Cancel"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
