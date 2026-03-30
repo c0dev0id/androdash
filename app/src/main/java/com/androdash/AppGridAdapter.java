@@ -19,7 +19,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONArray;
@@ -40,11 +39,13 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private static final int VIEW_TYPE_APP = 0;
     private static final int VIEW_TYPE_CONFIG = 1;
+    private static final int VIEW_TYPE_HISTORY = 2;
 
     public interface OnConfigToggleListener {
         void onShowAllAppsChanged(boolean showAll);
         void onLetterSortChanged(boolean usageSort);
         void onLetterBarPositionChanged(int position);
+        void onAppHistoryChanged(boolean enabled);
     }
 
     public interface OnAppHiddenChangedListener {
@@ -52,10 +53,12 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     private final List<AppModel> apps = new ArrayList<>();
+    private final List<AppModel> historyApps = new ArrayList<>();
     private final Context context;
     private final HiddenAppsStore hiddenAppsStore;
     private final LetterSortStore letterSortStore;
     private final LetterBarPositionStore letterBarPositionStore;
+    private final AppHistoryStore appHistoryStore;
     private boolean configMode = false;
     private boolean showAllApps = false;
     private OnConfigToggleListener configToggleListener;
@@ -64,11 +67,13 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public AppGridAdapter(Context context, HiddenAppsStore hiddenAppsStore,
-                          LetterSortStore letterSortStore, LetterBarPositionStore letterBarPositionStore) {
+                          LetterSortStore letterSortStore, LetterBarPositionStore letterBarPositionStore,
+                          AppHistoryStore appHistoryStore) {
         this.context = context;
         this.hiddenAppsStore = hiddenAppsStore;
         this.letterSortStore = letterSortStore;
         this.letterBarPositionStore = letterBarPositionStore;
+        this.appHistoryStore = appHistoryStore;
     }
 
     public void setOnConfigToggleListener(OnConfigToggleListener listener) {
@@ -95,33 +100,22 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return showAllApps;
     }
 
+    public void setHistoryApps(List<AppModel> history) {
+        this.historyApps.clear();
+        this.historyApps.addAll(history);
+    }
+
     public void updateApps(List<AppModel> newApps) {
-        DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-            @Override
-            public int getOldListSize() { return apps.size(); }
-
-            @Override
-            public int getNewListSize() { return newApps.size(); }
-
-            @Override
-            public boolean areItemsTheSame(int oldPos, int newPos) {
-                return apps.get(oldPos).packageName.equals(newApps.get(newPos).packageName);
-            }
-
-            @Override
-            public boolean areContentsTheSame(int oldPos, int newPos) {
-                return apps.get(oldPos).packageName.equals(newApps.get(newPos).packageName);
-            }
-        });
-
         apps.clear();
         apps.addAll(newApps);
-        result.dispatchUpdatesTo(this);
+        notifyDataSetChanged();
     }
 
     @Override
     public int getItemViewType(int position) {
-        return configMode ? VIEW_TYPE_CONFIG : VIEW_TYPE_APP;
+        if (configMode) return VIEW_TYPE_CONFIG;
+        if (position < historyApps.size()) return VIEW_TYPE_HISTORY;
+        return VIEW_TYPE_APP;
     }
 
     @NonNull
@@ -137,12 +131,32 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return new AppViewHolder(view);
     }
 
+    private void bindHistoryItem(AppViewHolder holder, int position) {
+        AppModel app = historyApps.get(position);
+        holder.icon.setImageDrawable(app.icon);
+        holder.label.setText(app.label);
+        holder.itemView.setAlpha(1.0f);
+        holder.itemView.setBackgroundResource(R.drawable.bg_app_card_history);
+
+        holder.itemView.setOnClickListener(v -> {
+            appHistoryStore.recordLaunch(app.packageName);
+            context.startActivity(app.launchIntent);
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            showAppMenu(app);
+            return true;
+        });
+    }
+
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (configMode) {
             bindConfigItem((ConfigViewHolder) holder, position);
+        } else if (position < historyApps.size()) {
+            bindHistoryItem((AppViewHolder) holder, position);
         } else {
-            bindAppItem((AppViewHolder) holder, position);
+            bindAppItem((AppViewHolder) holder, position - historyApps.size());
         }
     }
 
@@ -150,11 +164,13 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         AppModel app = apps.get(position);
         holder.icon.setImageDrawable(app.icon);
         holder.label.setText(app.label);
+        holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
 
         boolean isHidden = hiddenAppsStore.isHidden(app.packageName);
         holder.itemView.setAlpha(isHidden && showAllApps ? 0.4f : 1.0f);
 
         holder.itemView.setOnClickListener(v -> {
+            appHistoryStore.recordLaunch(app.packageName);
             context.startActivity(app.launchIntent);
         });
 
@@ -204,6 +220,20 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
         } else if (position == 3) {
+            boolean historyEnabled = appHistoryStore.isEnabled();
+            holder.label.setText("App History");
+            holder.itemView.setBackgroundResource(
+                    historyEnabled ? R.drawable.bg_button_selected : R.drawable.bg_app_card);
+            holder.itemView.setOnClickListener(v -> {
+                boolean newState = !appHistoryStore.isEnabled();
+                appHistoryStore.setEnabled(newState);
+                holder.itemView.setBackgroundResource(
+                        newState ? R.drawable.bg_button_selected : R.drawable.bg_app_card);
+                if (configToggleListener != null) {
+                    configToggleListener.onAppHistoryChanged(newState);
+                }
+            });
+        } else if (position == 4) {
             holder.label.setText("Version: " + BuildConfig.GIT_HASH);
             holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
             holder.itemView.setOnClickListener(v -> {
@@ -357,8 +387,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        if (configMode) return 4;
-        return apps.size();
+        if (configMode) return 5;
+        return historyApps.size() + apps.size();
     }
 
     private void showAppMenu(AppModel app) {

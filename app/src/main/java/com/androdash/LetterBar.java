@@ -67,6 +67,10 @@ public class LetterBar {
         return selectedLetters.contains(GEAR_CHAR);
     }
 
+    public boolean hasSelection() {
+        return !selectedLetters.isEmpty();
+    }
+
     public void enterConfigMode() {
         selectedLetters.clear();
         selectedLetters.add(GEAR_CHAR);

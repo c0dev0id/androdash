@@ -33,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     private HiddenAppsStore hiddenAppsStore;
     private LetterSortStore letterSortStore;
     private LetterBarPositionStore letterBarPositionStore;
+    private AppHistoryStore appHistoryStore;
+    private int spanCount;
     private boolean showAllApps = false;
     private boolean wasConfigMode = false;
     private boolean appsDirty = false;
@@ -52,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         hiddenAppsStore = new HiddenAppsStore(this);
         letterSortStore = new LetterSortStore(this);
         letterBarPositionStore = new LetterBarPositionStore(this);
+        appHistoryStore = new AppHistoryStore(this);
 
         rootLayout = findViewById(R.id.rootLayout);
         int baseSpacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
@@ -69,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         appGrid.setId(View.generateViewId());
         appGrid.setClipToPadding(false);
 
-        adapter = new AppGridAdapter(this, hiddenAppsStore, letterSortStore, letterBarPositionStore);
+        adapter = new AppGridAdapter(this, hiddenAppsStore, letterSortStore, letterBarPositionStore, appHistoryStore);
         appGrid.setAdapter(adapter);
 
         adapter.setOnConfigToggleListener(new AppGridAdapter.OnConfigToggleListener() {
@@ -88,6 +91,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onLetterBarPositionChanged(int position) {
                 rebuildLayout();
+            }
+
+            @Override
+            public void onAppHistoryChanged(boolean enabled) {
+                refreshDisplayedApps();
             }
         });
 
@@ -229,7 +237,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupGridLayout() {
-        int spanCount;
         if (letterBarPositionStore.isVertical()) {
             spanCount = isPortrait() ? 2 : 4;
         } else {
@@ -264,17 +271,35 @@ public class MainActivity extends AppCompatActivity {
         }
 
         List<AppModel> letterFiltered = letterBar.getFilteredApps();
+        List<AppModel> displayApps;
         if (!showAllApps) {
-            List<AppModel> visible = new ArrayList<>();
+            displayApps = new ArrayList<>();
             for (AppModel app : letterFiltered) {
                 if (!hiddenAppsStore.isHidden(app.packageName)) {
-                    visible.add(app);
+                    displayApps.add(app);
                 }
             }
-            adapter.updateApps(visible);
         } else {
-            adapter.updateApps(letterFiltered);
+            displayApps = letterFiltered;
         }
+
+        // Compute history row
+        List<AppModel> historyList = new ArrayList<>();
+        if (appHistoryStore.isEnabled() && !letterBar.hasSelection()) {
+            List<String> recentPackages = appHistoryStore.getRecentPackages();
+            int limit = Math.min(recentPackages.size(), spanCount);
+            for (int i = 0; i < limit; i++) {
+                String pkg = recentPackages.get(i);
+                for (AppModel app : allApps) {
+                    if (app.packageName.equals(pkg) && !hiddenAppsStore.isHidden(pkg)) {
+                        historyList.add(app);
+                        break;
+                    }
+                }
+            }
+        }
+        adapter.setHistoryApps(historyList);
+        adapter.updateApps(displayApps);
     }
 
     private void registerPackageReceiver() {
