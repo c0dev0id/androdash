@@ -405,13 +405,11 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 .setView(dialogView)
                 .create();
 
-        // Header
         ImageView headerIcon = dialogView.findViewById(R.id.dialogAppIcon);
         TextView headerLabel = dialogView.findViewById(R.id.dialogAppLabel);
         headerIcon.setImageDrawable(app.icon);
         headerLabel.setText(app.label);
 
-        // Right column: action buttons
         boolean isHidden = hiddenAppsStore.isHidden(app.packageName);
 
         TextView btnHideShow = dialogView.findViewById(R.id.btnHideShow);
@@ -448,10 +446,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         TextView btnCancel = dialogView.findViewById(R.id.btnCancel);
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
-        // Left column: app shortcuts
         LinearLayout shortcutContainer = dialogView.findViewById(R.id.shortcutContainer);
         TextView noShortcutsText = dialogView.findViewById(R.id.noShortcutsText);
-        View leftColumn = dialogView.findViewById(R.id.leftColumn);
 
         LauncherApps launcherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
         boolean hasShortcuts = false;

@@ -21,7 +21,9 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -135,8 +137,7 @@ public class MainActivity extends AppCompatActivity {
         rootLayout.removeAllViews();
 
         int position = letterBarPositionStore.getPosition();
-        boolean vertical = (position == LetterBarPositionStore.POSITION_LEFT
-                || position == LetterBarPositionStore.POSITION_RIGHT);
+        boolean vertical = letterBarPositionStore.isVertical();
 
         LinearLayout wrapper = new LinearLayout(this);
         wrapper.setLayoutParams(new FrameLayout.LayoutParams(
@@ -185,17 +186,13 @@ public class MainActivity extends AppCompatActivity {
         if (appGrid.getParent() != null) {
             ((ViewGroup) appGrid.getParent()).removeView(appGrid);
         }
-        LinearLayout.LayoutParams gridParams = new LinearLayout.LayoutParams(
-                0, 0);
+        LinearLayout.LayoutParams gridParams;
         if (vertical) {
-            gridParams.width = 0;
-            gridParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-            gridParams.weight = 1;
+            gridParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT);
         } else {
-            gridParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            gridParams.height = 0;
-            gridParams.weight = 1;
+            gridParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0);
         }
+        gridParams.weight = 1;
         appGrid.setLayoutParams(gridParams);
 
         // Add in correct order
@@ -308,18 +305,19 @@ public class MainActivity extends AppCompatActivity {
             displayApps = letterFiltered;
         }
 
-        // Compute history row
         List<AppModel> historyList = new ArrayList<>();
         if (appHistoryStore.isEnabled() && !letterBar.hasSelection()) {
+            Map<String, AppModel> appsByPackage = new HashMap<>();
+            for (AppModel app : allApps) {
+                appsByPackage.put(app.packageName, app);
+            }
             List<String> recentPackages = appHistoryStore.getRecentPackages();
             int limit = Math.min(recentPackages.size(), spanCount);
             for (int i = 0; i < limit; i++) {
                 String pkg = recentPackages.get(i);
-                for (AppModel app : allApps) {
-                    if (app.packageName.equals(pkg) && !hiddenAppsStore.isHidden(pkg)) {
-                        historyList.add(app);
-                        break;
-                    }
+                AppModel app = appsByPackage.get(pkg);
+                if (app != null && !hiddenAppsStore.isHidden(pkg)) {
+                    historyList.add(app);
                 }
             }
         }
