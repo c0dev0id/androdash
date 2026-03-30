@@ -106,6 +106,31 @@ public class MainActivity extends AppCompatActivity {
         registerPackageReceiver();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (letterBar == null) return;
+
+        // Exit config mode if returning from background
+        if (wasConfigMode) {
+            wasConfigMode = false;
+            adapter.setConfigMode(false);
+        }
+
+        if (appsDirty) {
+            appsDirty = false;
+            allApps = AppLoader.loadApps(this);
+            letterBar.setApps(allApps);
+        } else if (letterBar.hasSelection()) {
+            letterBar.clearSelection();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+    }
+
     private void buildLayout() {
         rootLayout.removeAllViews();
 
