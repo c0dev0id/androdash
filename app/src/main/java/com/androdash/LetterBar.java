@@ -227,6 +227,9 @@ public class LetterBar {
             listener.onFilterChanged(getFilteredApps());
         }
 
+        // Force remeasure so scroll range reflects current content
+        scrollView.requestLayout();
+
         // Scroll to show available letters
         scrollView.post(() -> {
             if (selectedLetters.isEmpty()) {
@@ -240,6 +243,11 @@ public class LetterBar {
         selectedLetters.remove(selectedLetters.size() - 1);
         updateButtons();
         return true;
+    }
+
+    public void clearSelection() {
+        selectedLetters.clear();
+        updateButtons();
     }
 
     private void onSelectedLetterClick(int index) {
