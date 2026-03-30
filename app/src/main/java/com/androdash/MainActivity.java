@@ -124,8 +124,6 @@ public class MainActivity extends AppCompatActivity {
             appsDirty = false;
             allApps = AppLoader.loadApps(this);
             letterBar.setApps(allApps);
-        } else if (letterBar.hasSelection()) {
-            letterBar.clearSelection();
         }
     }
 
