@@ -245,6 +245,30 @@ public class LetterBar {
         return true;
     }
 
+    /**
+     * Selects a letter by keyboard input, but only if that letter is currently
+     * available in the letter bar. Returns true if the letter was selected.
+     */
+    public boolean selectLetter(char c) {
+        char upper = Character.toUpperCase(c);
+        List<ButtonSpec> available = computeTargetButtons();
+        for (ButtonSpec spec : available) {
+            if (!spec.selected && spec.letter == upper) {
+                onAvailableLetterClick(upper);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns the first app in the current filtered list, or null if none.
+     */
+    public AppModel getFirstFilteredApp() {
+        List<AppModel> filtered = getFilteredApps();
+        return filtered.isEmpty() ? null : filtered.get(0);
+    }
+
     public void clearSelection() {
         selectedLetters.clear();
         updateButtons();

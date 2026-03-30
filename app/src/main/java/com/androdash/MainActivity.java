@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -332,6 +333,39 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
         filter.addDataScheme("package");
         registerReceiver(packageReceiver, filter, Context.RECEIVER_EXPORTED);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (letterBar == null || event.getAction() != KeyEvent.ACTION_DOWN) {
+            return super.dispatchKeyEvent(event);
+        }
+        int keyCode = event.getKeyCode();
+
+        // Backspace → remove last selected letter
+        if (keyCode == KeyEvent.KEYCODE_DEL) {
+            letterBar.removeLastLetter();
+            return true;
+        }
+
+        // Enter → launch first app in the filtered result
+        if (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
+            AppModel first = letterBar.getFirstFilteredApp();
+            if (first != null && first.launchIntent != null) {
+                appHistoryStore.recordLaunch(first.packageName);
+                startActivity(first.launchIntent);
+            }
+            return true;
+        }
+
+        // Letter keys → select the matching letter on the bar if available
+        int unicode = event.getUnicodeChar();
+        if (unicode != 0 && Character.isLetter((char) unicode)) {
+            letterBar.selectLetter((char) unicode);
+            return true;
+        }
+
+        return super.dispatchKeyEvent(event);
     }
 
     @Override
