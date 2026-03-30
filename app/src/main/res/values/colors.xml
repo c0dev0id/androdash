@@ -11,4 +11,6 @@
     <color name="highlight_top">#1CFFFFFF</color>
     <color name="shadow_bottom">#14000000</color>
     <color name="progress_fill">#40F57C00</color>
+    <color name="history_card_body">#2A2218</color>
+    <color name="history_card_border">#40F57C00</color>
 </resources>
