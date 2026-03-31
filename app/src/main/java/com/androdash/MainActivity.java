@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String DMD_ACTION = "com.thorkracing.wireddevices.keypress";
     private static final int DMD_KEY_LEFT     = 21;
     private static final int DMD_KEY_RIGHT    = 22;
+    private static final int DMD_KEY_DOWN     = 20;
     private static final int DMD_KEY_BUTTON1  = 66;
     private static final int DMD_KEY_BUTTON2  = 111;
 
@@ -66,22 +67,21 @@ public class MainActivity extends AppCompatActivity {
             if (!intent.hasExtra("key_press")) return;
             if (intent.getIntExtra("repeat", 0) != 0) return;
 
-            // Ensure the letterbar is active: exit config mode if needed
-            if (letterBar.isConfigMode()) {
-                letterBar.removeLastLetter();
-                return;
-            }
-
             int keyCode = intent.getIntExtra("key_press", 0);
             switch (keyCode) {
                 case DMD_KEY_LEFT:
+                    letterBar.focusPrev();
+                    break;
+                case DMD_KEY_RIGHT:
+                    letterBar.focusNext();
+                    break;
+                case DMD_KEY_BUTTON1:
+                    letterBar.selectFocused();
+                    break;
                 case DMD_KEY_BUTTON2:
                     letterBar.removeLastLetter();
                     break;
-                case DMD_KEY_RIGHT:
-                    letterBar.selectFirstAvailable();
-                    break;
-                case DMD_KEY_BUTTON1:
+                case DMD_KEY_DOWN:
                     AppModel first = letterBar.getFirstFilteredApp();
                     if (first != null && first.launchIntent != null) {
                         appHistoryStore.recordLaunch(first.packageName);

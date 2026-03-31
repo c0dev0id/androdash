@@ -13,4 +13,6 @@
     <color name="progress_fill">#40F57C00</color>
     <color name="history_card_body">#2A2218</color>
     <color name="history_card_border">#40F57C00</color>
+    <color name="button_focused_body">#5A5A5A</color>
+    <color name="button_focused_border">#FFFFFF</color>
 </resources>
