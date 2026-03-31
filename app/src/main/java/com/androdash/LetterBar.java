@@ -38,6 +38,7 @@ public class LetterBar {
     private OnFilterChangedListener listener;
     private LetterSortStore letterSortStore;
     private MatchMethodStore matchMethodStore;
+    private List<AppModel> lastFilteredApps;
 
     public LetterBar(Context context, LinearLayout container, ViewGroup scrollView) {
         this.context = context;
@@ -84,7 +85,10 @@ public class LetterBar {
 
     public List<AppModel> getFilteredApps() {
         String prefix = getPrefix();
-        if (prefix.isEmpty()) return new ArrayList<>(allApps);
+        if (prefix.isEmpty()) {
+            lastFilteredApps = new ArrayList<>(allApps);
+            return lastFilteredApps;
+        }
 
         int method = matchMethodStore != null ? matchMethodStore.getMethod()
                 : MatchMethodStore.METHOD_BEGINNING;
@@ -100,6 +104,7 @@ public class LetterBar {
                 if (fuzzyMatch(upper, prefix) >= 0) filtered.add(app);
             }
         }
+        lastFilteredApps = filtered;
         return filtered;
     }
 
@@ -175,7 +180,7 @@ public class LetterBar {
                     // Find all chars that can extend the substring match
                     String extended = prefix;
                     for (int i = 0; i < upper.length(); i++) {
-                        if (upper.substring(i).startsWith(extended) && i + extended.length() < upper.length()) {
+                        if (upper.regionMatches(i, extended, 0, extended.length()) && i + extended.length() < upper.length()) {
                             nextChars.add(upper.charAt(i + extended.length()));
                         }
                     }
@@ -277,9 +282,9 @@ public class LetterBar {
             }
         }
 
-        // Notify listener
+        // Notify listener — lastFilteredApps was set during computeTargetButtons()
         if (listener != null) {
-            listener.onFilterChanged(getFilteredApps());
+            listener.onFilterChanged(lastFilteredApps != null ? lastFilteredApps : getFilteredApps());
         }
 
         // Force remeasure so scroll range reflects current content

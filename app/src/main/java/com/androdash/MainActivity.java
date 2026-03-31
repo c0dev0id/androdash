@@ -41,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     private AppHistoryStore appHistoryStore;
     private MatchMethodStore matchMethodStore;
     private int spanCount;
-    private boolean showAllApps = false;
     private boolean wasConfigMode = false;
     private boolean appsDirty = false;
     private boolean isResumed = false;
@@ -86,8 +85,7 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnConfigToggleListener(new AppGridAdapter.OnConfigToggleListener() {
             @Override
             public void onShowAllAppsChanged(boolean showAll) {
-                showAllApps = showAll;
-                adapter.setShowAllApps(showAll);
+                refreshDisplayedApps();
             }
 
             @Override
@@ -316,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
 
         List<AppModel> letterFiltered = letterBar.getFilteredApps();
         List<AppModel> displayApps;
-        if (!showAllApps) {
+        if (!adapter.isShowAllApps()) {
             displayApps = new ArrayList<>();
             for (AppModel app : letterFiltered) {
                 if (!hiddenAppsStore.isHidden(app.packageName)) {

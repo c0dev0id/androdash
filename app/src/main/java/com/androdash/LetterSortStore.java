@@ -5,7 +5,9 @@ import android.content.SharedPreferences;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class LetterSortStore {
 
@@ -45,21 +47,24 @@ public class LetterSortStore {
 
     public List<Character> getSortedLetters(int position, List<Character> available) {
         String stack = prefs.getString(KEY_STACK_PREFIX + position, "");
+        Set<Character> availableSet = new HashSet<>(available);
 
         List<Character> result = new ArrayList<>();
+        Set<Character> added = new HashSet<>();
 
         // First: stack letters that are available, in MRU order
         for (int i = 0; i < stack.length(); i++) {
             char c = stack.charAt(i);
-            if (available.contains(c)) {
+            if (availableSet.contains(c)) {
                 result.add(c);
+                added.add(c);
             }
         }
 
         // Second: remaining available letters, alphabetically
         List<Character> remaining = new ArrayList<>();
         for (Character c : available) {
-            if (!result.contains(c)) {
+            if (!added.contains(c)) {
                 remaining.add(c);
             }
         }

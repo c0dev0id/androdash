@@ -141,6 +141,11 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return new AppViewHolder(view);
     }
 
+    private void launchApp(AppModel app) {
+        appHistoryStore.recordLaunch(app.packageName);
+        context.startActivity(app.launchIntent);
+    }
+
     private void bindHistoryItem(AppViewHolder holder, int position) {
         AppModel app = historyApps.get(position);
         holder.icon.setImageDrawable(app.icon);
@@ -148,10 +153,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         holder.itemView.setAlpha(1.0f);
         holder.itemView.setBackgroundResource(R.drawable.bg_app_card_history);
 
-        holder.itemView.setOnClickListener(v -> {
-            appHistoryStore.recordLaunch(app.packageName);
-            context.startActivity(app.launchIntent);
-        });
+        holder.itemView.setOnClickListener(v -> launchApp(app));
 
         holder.itemView.setOnLongClickListener(v -> {
             showAppMenu(app);
@@ -179,10 +181,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         boolean isHidden = hiddenAppsStore.isHidden(app.packageName);
         holder.itemView.setAlpha(isHidden && showAllApps ? 0.4f : 1.0f);
 
-        holder.itemView.setOnClickListener(v -> {
-            appHistoryStore.recordLaunch(app.packageName);
-            context.startActivity(app.launchIntent);
-        });
+        holder.itemView.setOnClickListener(v -> launchApp(app));
 
         holder.itemView.setOnLongClickListener(v -> {
             showAppMenu(app);
