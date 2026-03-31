@@ -51,6 +51,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public interface OnConfigToggleListener {
         void onShowAllAppsChanged(boolean showAll);
         void onLetterSortChanged(boolean usageSort);
+        void onMatchMethodChanged(int method);
         void onLetterBarPositionChanged(int position);
         void onAppHistoryChanged(boolean enabled);
     }
@@ -66,6 +67,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final LetterSortStore letterSortStore;
     private final LetterBarPositionStore letterBarPositionStore;
     private final AppHistoryStore appHistoryStore;
+    private final MatchMethodStore matchMethodStore;
     private boolean configMode = false;
     private boolean showAllApps = false;
     private OnConfigToggleListener configToggleListener;
@@ -75,12 +77,13 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public AppGridAdapter(Context context, HiddenAppsStore hiddenAppsStore,
                           LetterSortStore letterSortStore, LetterBarPositionStore letterBarPositionStore,
-                          AppHistoryStore appHistoryStore) {
+                          AppHistoryStore appHistoryStore, MatchMethodStore matchMethodStore) {
         this.context = context;
         this.hiddenAppsStore = hiddenAppsStore;
         this.letterSortStore = letterSortStore;
         this.letterBarPositionStore = letterBarPositionStore;
         this.appHistoryStore = appHistoryStore;
+        this.matchMethodStore = matchMethodStore;
     }
 
     public void setOnConfigToggleListener(OnConfigToggleListener listener) {
@@ -216,6 +219,17 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
         } else if (position == 2) {
+            int method = matchMethodStore.getMethod();
+            holder.label.setText("Match: " + matchMethodStore.getLabel(method));
+            holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
+            holder.itemView.setOnClickListener(v -> {
+                int newMethod = matchMethodStore.nextMethod();
+                holder.label.setText("Match: " + matchMethodStore.getLabel(newMethod));
+                if (configToggleListener != null) {
+                    configToggleListener.onMatchMethodChanged(newMethod);
+                }
+            });
+        } else if (position == 3) {
             int pos = letterBarPositionStore.getPosition();
             holder.label.setText("Letterbar: " + letterBarPositionStore.getArrow(pos));
             holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
@@ -226,7 +240,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     configToggleListener.onLetterBarPositionChanged(newPos);
                 }
             });
-        } else if (position == 3) {
+        } else if (position == 4) {
             boolean historyEnabled = appHistoryStore.isEnabled();
             holder.label.setText("App History");
             holder.itemView.setBackgroundResource(
@@ -240,7 +254,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     configToggleListener.onAppHistoryChanged(newState);
                 }
             });
-        } else if (position == 4) {
+        } else if (position == 5) {
             holder.label.setText("Version: " + BuildConfig.GIT_HASH);
             holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
             holder.itemView.setOnClickListener(v -> {
@@ -394,7 +408,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        if (configMode) return 5;
+        if (configMode) return 6;
         return historyApps.size() + apps.size();
     }
 

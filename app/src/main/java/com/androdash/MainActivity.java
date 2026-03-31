@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private LetterSortStore letterSortStore;
     private LetterBarPositionStore letterBarPositionStore;
     private AppHistoryStore appHistoryStore;
+    private MatchMethodStore matchMethodStore;
     private int spanCount;
     private boolean showAllApps = false;
     private boolean wasConfigMode = false;
@@ -61,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
         letterSortStore = new LetterSortStore(this);
         letterBarPositionStore = new LetterBarPositionStore(this);
         appHistoryStore = new AppHistoryStore(this);
+        matchMethodStore = new MatchMethodStore(this);
 
         rootLayout = findViewById(R.id.rootLayout);
         int baseSpacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
@@ -78,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         appGrid.setId(View.generateViewId());
         appGrid.setClipToPadding(false);
 
-        adapter = new AppGridAdapter(this, hiddenAppsStore, letterSortStore, letterBarPositionStore, appHistoryStore);
+        adapter = new AppGridAdapter(this, hiddenAppsStore, letterSortStore, letterBarPositionStore, appHistoryStore, matchMethodStore);
         appGrid.setAdapter(adapter);
 
         adapter.setOnConfigToggleListener(new AppGridAdapter.OnConfigToggleListener() {
@@ -92,6 +94,12 @@ public class MainActivity extends AppCompatActivity {
             public void onLetterSortChanged(boolean usageSort) {
                 // Sort mode is already persisted by LetterSortStore;
                 // no additional action needed since LetterBar reads it on rebuild
+            }
+
+            @Override
+            public void onMatchMethodChanged(int method) {
+                // Method is persisted by MatchMethodStore;
+                // LetterBar reads it dynamically on each filter call
             }
 
             @Override
@@ -225,6 +233,7 @@ public class MainActivity extends AppCompatActivity {
         // Initialize LetterBar
         letterBar = new LetterBar(this, letterContainer, scrollView);
         letterBar.setLetterSortStore(letterSortStore);
+        letterBar.setMatchMethodStore(matchMethodStore);
         letterBar.setOnFilterChangedListener(filteredApps -> {
             boolean inConfig = letterBar.isConfigMode();
             if (inConfig != wasConfigMode) {
