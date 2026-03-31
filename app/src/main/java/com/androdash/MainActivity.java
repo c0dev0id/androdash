@@ -125,13 +125,16 @@ public class MainActivity extends AppCompatActivity {
         if (appsDirty) {
             appsDirty = false;
             allApps = AppLoader.loadApps(this);
-            letterBar.setApps(allApps);
+            letterBar.updateApps(allApps);
         }
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        if (letterBar != null) {
+            letterBar.clearSelection();
+        }
     }
 
     private void buildLayout() {
