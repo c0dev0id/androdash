@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean showAllApps = false;
     private boolean wasConfigMode = false;
     private boolean appsDirty = false;
+    private boolean isResumed = false;
 
     private final BroadcastReceiver packageReceiver = new BroadcastReceiver() {
         @Override
@@ -127,12 +128,20 @@ public class MainActivity extends AppCompatActivity {
             allApps = AppLoader.loadApps(this);
             letterBar.updateApps(allApps);
         }
+
+        isResumed = true;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isResumed = false;
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        if (letterBar != null) {
+        if (letterBar != null && isResumed) {
             letterBar.clearSelection();
         }
     }
