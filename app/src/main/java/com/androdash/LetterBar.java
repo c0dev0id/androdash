@@ -306,6 +306,21 @@ public class LetterBar {
     }
 
     /**
+     * Selects the first available (unselected, non-gear) letter in the bar.
+     * Used for remote control RIGHT navigation. Returns true if a letter was selected.
+     */
+    public boolean selectFirstAvailable() {
+        List<ButtonSpec> buttons = computeTargetButtons();
+        for (ButtonSpec spec : buttons) {
+            if (!spec.selected && spec.letter != GEAR_CHAR) {
+                onAvailableLetterClick(spec.letter);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Selects a letter by keyboard input, but only if that letter is currently
      * available in the letter bar. Returns true if the letter was selected.
      */
