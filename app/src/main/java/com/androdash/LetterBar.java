@@ -37,6 +37,7 @@ public class LetterBar {
     private final List<Character> selectedLetters = new ArrayList<>();
     private OnFilterChangedListener listener;
     private LetterSortStore letterSortStore;
+    private MatchMethodStore matchMethodStore;
 
     public LetterBar(Context context, LinearLayout container, ViewGroup scrollView) {
         this.context = context;
@@ -63,6 +64,10 @@ public class LetterBar {
         this.letterSortStore = store;
     }
 
+    public void setMatchMethodStore(MatchMethodStore store) {
+        this.matchMethodStore = store;
+    }
+
     public boolean isConfigMode() {
         return selectedLetters.contains(GEAR_CHAR);
     }
@@ -81,13 +86,43 @@ public class LetterBar {
         String prefix = getPrefix();
         if (prefix.isEmpty()) return new ArrayList<>(allApps);
 
+        int method = matchMethodStore != null ? matchMethodStore.getMethod()
+                : MatchMethodStore.METHOD_BEGINNING;
+
         List<AppModel> filtered = new ArrayList<>();
         for (AppModel app : allApps) {
-            if (app.label.toUpperCase().startsWith(prefix)) {
-                filtered.add(app);
+            String upper = app.label.toUpperCase();
+            if (method == MatchMethodStore.METHOD_BEGINNING) {
+                if (upper.startsWith(prefix)) filtered.add(app);
+            } else if (method == MatchMethodStore.METHOD_ANYWHERE) {
+                if (upper.contains(prefix)) filtered.add(app);
+            } else {
+                if (fuzzyMatch(upper, prefix) >= 0) filtered.add(app);
             }
         }
         return filtered;
+    }
+
+    /**
+     * Returns the index in label after the last matched char of pattern,
+     * or -1 if the pattern does not fuzzy-match.
+     */
+    private static int fuzzyMatch(String label, String pattern) {
+        int li = 0;
+        for (int pi = 0; pi < pattern.length(); pi++) {
+            char target = pattern.charAt(pi);
+            boolean found = false;
+            while (li < label.length()) {
+                if (label.charAt(li) == target) {
+                    li++;
+                    found = true;
+                    break;
+                }
+                li++;
+            }
+            if (!found) return -1;
+        }
+        return li;
     }
 
     private String getPrefix() {
@@ -126,12 +161,32 @@ public class LetterBar {
         if (!inConfig) {
             String prefix = getPrefix();
             List<AppModel> matching = getFilteredApps();
+            int method = matchMethodStore != null ? matchMethodStore.getMethod()
+                    : MatchMethodStore.METHOD_BEGINNING;
 
             Set<Character> nextChars = new LinkedHashSet<>();
             for (AppModel app : matching) {
                 String upper = app.label.toUpperCase();
-                if (upper.length() > prefix.length()) {
-                    nextChars.add(upper.charAt(prefix.length()));
+                if (method == MatchMethodStore.METHOD_BEGINNING) {
+                    if (upper.length() > prefix.length()) {
+                        nextChars.add(upper.charAt(prefix.length()));
+                    }
+                } else if (method == MatchMethodStore.METHOD_ANYWHERE) {
+                    // Find all chars that can extend the substring match
+                    String extended = prefix;
+                    for (int i = 0; i < upper.length(); i++) {
+                        if (upper.substring(i).startsWith(extended) && i + extended.length() < upper.length()) {
+                            nextChars.add(upper.charAt(i + extended.length()));
+                        }
+                    }
+                } else {
+                    // Fuzzy: find valid next chars after the current fuzzy match
+                    int afterMatch = fuzzyMatch(upper, prefix);
+                    if (afterMatch >= 0) {
+                        for (int i = afterMatch; i < upper.length(); i++) {
+                            nextChars.add(upper.charAt(i));
+                        }
+                    }
                 }
             }
 
