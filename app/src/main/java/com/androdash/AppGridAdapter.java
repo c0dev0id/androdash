@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.LauncherApps;
 import android.content.pm.ShortcutInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.ClipDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -18,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -60,6 +63,11 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         void onAppHiddenChanged();
     }
 
+    public interface OnBookmarkChangedListener {
+        void onBookmarkChanged();
+        void onPickImageForBookmark();
+    }
+
     private final List<AppModel> apps = new ArrayList<>();
     private final List<AppModel> historyApps = new ArrayList<>();
     private final Context context;
@@ -68,22 +76,30 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final LetterBarPositionStore letterBarPositionStore;
     private final AppHistoryStore appHistoryStore;
     private final MatchMethodStore matchMethodStore;
+    private final BookmarkStore bookmarkStore;
     private boolean configMode = false;
     private boolean showAllApps = false;
     private OnConfigToggleListener configToggleListener;
     private OnAppHiddenChangedListener appHiddenChangedListener;
+    private OnBookmarkChangedListener bookmarkChangedListener;
     private boolean isUpdating = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    // Transient state for bookmark image picker
+    private Bitmap pendingBookmarkIcon;
+    private ImageView pendingIconPreview;
+
     public AppGridAdapter(Context context, HiddenAppsStore hiddenAppsStore,
                           LetterSortStore letterSortStore, LetterBarPositionStore letterBarPositionStore,
-                          AppHistoryStore appHistoryStore, MatchMethodStore matchMethodStore) {
+                          AppHistoryStore appHistoryStore, MatchMethodStore matchMethodStore,
+                          BookmarkStore bookmarkStore) {
         this.context = context;
         this.hiddenAppsStore = hiddenAppsStore;
         this.letterSortStore = letterSortStore;
         this.letterBarPositionStore = letterBarPositionStore;
         this.appHistoryStore = appHistoryStore;
         this.matchMethodStore = matchMethodStore;
+        this.bookmarkStore = bookmarkStore;
     }
 
     public void setOnConfigToggleListener(OnConfigToggleListener listener) {
@@ -92,6 +108,17 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public void setOnAppHiddenChangedListener(OnAppHiddenChangedListener listener) {
         this.appHiddenChangedListener = listener;
+    }
+
+    public void setOnBookmarkChangedListener(OnBookmarkChangedListener listener) {
+        this.bookmarkChangedListener = listener;
+    }
+
+    public void setPickedBookmarkIcon(Bitmap bitmap) {
+        this.pendingBookmarkIcon = bitmap;
+        if (pendingIconPreview != null) {
+            pendingIconPreview.setImageBitmap(bitmap);
+        }
     }
 
     public void setConfigMode(boolean configMode) {
@@ -156,7 +183,11 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         holder.itemView.setOnClickListener(v -> launchApp(app));
 
         holder.itemView.setOnLongClickListener(v -> {
-            showAppMenu(app);
+            if (app.isBookmark) {
+                showBookmarkMenu(app);
+            } else {
+                showAppMenu(app);
+            }
             return true;
         });
     }
@@ -184,7 +215,11 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         holder.itemView.setOnClickListener(v -> launchApp(app));
 
         holder.itemView.setOnLongClickListener(v -> {
-            showAppMenu(app);
+            if (app.isBookmark) {
+                showBookmarkMenu(app);
+            } else {
+                showAppMenu(app);
+            }
             return true;
         });
     }
@@ -260,6 +295,10 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (isUpdating) return;
                 checkForUpdate(holder);
             });
+        } else if (position == 6) {
+            holder.label.setText("Add Bookmark");
+            holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
+            holder.itemView.setOnClickListener(v -> showBookmarkDialog(null));
         }
     }
 
@@ -407,9 +446,185 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        if (configMode) return 6;
+        if (configMode) return 7;
         return historyApps.size() + apps.size();
     }
+
+    // ---- Bookmark dialog (Add / Edit) ----
+
+    private void showBookmarkDialog(BookmarkStore.BookmarkData existing) {
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_bookmark, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
+                .setView(dialogView)
+                .create();
+
+        TextView title = dialogView.findViewById(R.id.bookmarkDialogTitle);
+        EditText labelField = dialogView.findViewById(R.id.bookmarkLabel);
+        EditText urlField = dialogView.findViewById(R.id.bookmarkUrl);
+        ImageView iconPreview = dialogView.findViewById(R.id.bookmarkIconPreview);
+        TextView btnPickImage = dialogView.findViewById(R.id.btnPickImage);
+        TextView btnCancel = dialogView.findViewById(R.id.btnBookmarkCancel);
+        TextView btnSave = dialogView.findViewById(R.id.btnBookmarkSave);
+
+        pendingBookmarkIcon = null;
+        pendingIconPreview = iconPreview;
+
+        if (existing != null) {
+            title.setText("Edit Bookmark");
+            labelField.setText(existing.label);
+            urlField.setText(existing.url);
+            Drawable existingIcon = bookmarkStore.loadIconDrawable(existing.id);
+            if (existingIcon != null) {
+                iconPreview.setImageDrawable(existingIcon);
+            }
+        }
+
+        btnPickImage.setOnClickListener(v -> {
+            if (bookmarkChangedListener != null) {
+                bookmarkChangedListener.onPickImageForBookmark();
+            }
+        });
+
+        btnCancel.setOnClickListener(v -> {
+            pendingIconPreview = null;
+            pendingBookmarkIcon = null;
+            dialog.dismiss();
+        });
+
+        btnSave.setOnClickListener(v -> {
+            String label = labelField.getText().toString().trim();
+            String url = urlField.getText().toString().trim();
+
+            if (label.isEmpty() || url.isEmpty()) return;
+
+            // Ensure URL has a scheme
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
+            }
+
+            String id = existing != null ? existing.id : BookmarkStore.generateId();
+            boolean hasCustomIcon = pendingBookmarkIcon != null
+                    || (existing != null && existing.hasCustomIcon && pendingBookmarkIcon == null);
+
+            BookmarkStore.BookmarkData data = new BookmarkStore.BookmarkData(
+                    id, label, url, hasCustomIcon);
+
+            if (pendingBookmarkIcon != null) {
+                bookmarkStore.saveIcon(id, pendingBookmarkIcon);
+                data.hasCustomIcon = true;
+            }
+
+            bookmarkStore.save(data);
+
+            // If no custom icon, download favicon in background
+            if (!data.hasCustomIcon) {
+                String faviconUrl = url;
+                downloadFavicon(id, faviconUrl);
+            }
+
+            pendingIconPreview = null;
+            pendingBookmarkIcon = null;
+            dialog.dismiss();
+
+            if (bookmarkChangedListener != null) {
+                bookmarkChangedListener.onBookmarkChanged();
+            }
+        });
+
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
+            window.setAttributes(params);
+        }
+    }
+
+    // ---- Bookmark long-press menu ----
+
+    private void showBookmarkMenu(AppModel app) {
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_bookmark_menu, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
+                .setView(dialogView)
+                .create();
+
+        ImageView headerIcon = dialogView.findViewById(R.id.dialogBookmarkIcon);
+        TextView headerLabel = dialogView.findViewById(R.id.dialogBookmarkLabel);
+        headerIcon.setImageDrawable(app.icon);
+        headerLabel.setText(app.label);
+
+        String bookmarkId = app.packageName.substring("bookmark://".length());
+
+        TextView btnEdit = dialogView.findViewById(R.id.btnEditBookmark);
+        btnEdit.setOnClickListener(v -> {
+            dialog.dismiss();
+            BookmarkStore.BookmarkData data = bookmarkStore.getById(bookmarkId);
+            if (data != null) {
+                showBookmarkDialog(data);
+            }
+        });
+
+        TextView btnDelete = dialogView.findViewById(R.id.btnDeleteBookmark);
+        btnDelete.setOnClickListener(v -> {
+            bookmarkStore.delete(bookmarkId);
+            dialog.dismiss();
+            if (bookmarkChangedListener != null) {
+                bookmarkChangedListener.onBookmarkChanged();
+            }
+        });
+
+        TextView btnCancel = dialogView.findViewById(R.id.btnCancelBookmark);
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
+            window.setAttributes(params);
+        }
+    }
+
+    // ---- Favicon download ----
+
+    private void downloadFavicon(String bookmarkId, String bookmarkUrl) {
+        executor.submit(() -> {
+            try {
+                Uri uri = Uri.parse(bookmarkUrl);
+                String host = uri.getHost();
+                if (host == null) return;
+
+                URL faviconUrl = new URL("https://www.google.com/s2/favicons?domain=" + host + "&sz=128");
+                HttpURLConnection conn = (HttpURLConnection) faviconUrl.openConnection();
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+
+                InputStream is = conn.getInputStream();
+                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                is.close();
+                conn.disconnect();
+
+                if (bitmap != null) {
+                    bookmarkStore.saveIcon(bookmarkId, bitmap);
+                    bitmap.recycle();
+                    runOnUi(() -> {
+                        if (bookmarkChangedListener != null) {
+                            bookmarkChangedListener.onBookmarkChanged();
+                        }
+                    });
+                }
+            } catch (Exception ignored) {
+            }
+        });
+    }
+
+    // ---- App long-press menu ----
 
     private void showAppMenu(AppModel app) {
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_app_menu, null);

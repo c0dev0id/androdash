@@ -8,12 +8,18 @@ public class AppModel implements Comparable<AppModel> {
     public final String packageName;
     public final Drawable icon;
     public final Intent launchIntent;
+    public final boolean isBookmark;
 
     public AppModel(String label, String packageName, Drawable icon, Intent launchIntent) {
+        this(label, packageName, icon, launchIntent, false);
+    }
+
+    public AppModel(String label, String packageName, Drawable icon, Intent launchIntent, boolean isBookmark) {
         this.label = label;
         this.packageName = packageName;
         this.icon = icon;
         this.launchIntent = launchIntent;
+        this.isBookmark = isBookmark;
     }
 
     @Override

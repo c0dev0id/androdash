@@ -5,6 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -15,6 +19,8 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -22,7 +28,9 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,10 +49,13 @@ public class MainActivity extends AppCompatActivity {
     private LetterBarPositionStore letterBarPositionStore;
     private AppHistoryStore appHistoryStore;
     private MatchMethodStore matchMethodStore;
+    private BookmarkStore bookmarkStore;
     private int spanCount;
     private boolean wasConfigMode = false;
     private boolean appsDirty = false;
     private boolean isResumed = false;
+
+    private ActivityResultLauncher<Intent> imagePickerLauncher;
 
     private final BroadcastReceiver packageReceiver = new BroadcastReceiver() {
         @Override
@@ -102,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
         letterBarPositionStore = new LetterBarPositionStore(this);
         appHistoryStore = new AppHistoryStore(this);
         matchMethodStore = new MatchMethodStore(this);
+        bookmarkStore = new BookmarkStore(this);
 
         rootLayout = findViewById(R.id.rootLayout);
         int baseSpacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
@@ -119,8 +131,30 @@ public class MainActivity extends AppCompatActivity {
         appGrid.setId(View.generateViewId());
         appGrid.setClipToPadding(false);
 
-        adapter = new AppGridAdapter(this, hiddenAppsStore, letterSortStore, letterBarPositionStore, appHistoryStore, matchMethodStore);
+        adapter = new AppGridAdapter(this, hiddenAppsStore, letterSortStore,
+                letterBarPositionStore, appHistoryStore, matchMethodStore, bookmarkStore);
         appGrid.setAdapter(adapter);
+
+        // Register image picker for bookmarks
+        imagePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri imageUri = result.getData().getData();
+                        if (imageUri == null) return;
+                        try {
+                            InputStream is = getContentResolver().openInputStream(imageUri);
+                            Bitmap bitmap = BitmapFactory.decodeStream(is);
+                            if (is != null) is.close();
+                            if (bitmap != null) {
+                                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 96, 96, true);
+                                if (scaled != bitmap) bitmap.recycle();
+                                adapter.setPickedBookmarkIcon(scaled);
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                });
 
         adapter.setOnConfigToggleListener(new AppGridAdapter.OnConfigToggleListener() {
             @Override
@@ -153,6 +187,22 @@ public class MainActivity extends AppCompatActivity {
 
         adapter.setOnAppHiddenChangedListener(() -> refreshDisplayedApps());
 
+        adapter.setOnBookmarkChangedListener(new AppGridAdapter.OnBookmarkChangedListener() {
+            @Override
+            public void onBookmarkChanged() {
+                mergeBookmarksIntoApps();
+                letterBar.updateApps(allApps);
+                refreshDisplayedApps();
+            }
+
+            @Override
+            public void onPickImageForBookmark() {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/*");
+                imagePickerLauncher.launch(intent);
+            }
+        });
+
         buildLayout();
         refreshApps();
         registerPackageReceiver();
@@ -179,6 +229,7 @@ public class MainActivity extends AppCompatActivity {
         if (appsDirty) {
             appsDirty = false;
             allApps = AppLoader.loadApps(this);
+            mergeBookmarksIntoApps();
             letterBar.updateApps(allApps);
         }
 
@@ -351,13 +402,37 @@ public class MainActivity extends AppCompatActivity {
 
     private void refreshApps() {
         allApps = AppLoader.loadApps(this);
+        mergeBookmarksIntoApps();
         letterBar.setApps(allApps);
+    }
+
+    private void mergeBookmarksIntoApps() {
+        // Remove any existing bookmarks from allApps
+        List<AppModel> realApps = new ArrayList<>();
+        for (AppModel app : allApps) {
+            if (!app.isBookmark) {
+                realApps.add(app);
+            }
+        }
+
+        // Add bookmarks
+        List<BookmarkStore.BookmarkData> bookmarks = bookmarkStore.getAll();
+        for (BookmarkStore.BookmarkData b : bookmarks) {
+            Drawable icon = bookmarkStore.loadIconDrawable(b.id);
+            Intent launchIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(b.url));
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            realApps.add(new AppModel(b.label, b.getPackageName(), icon, launchIntent, true));
+        }
+
+        Collections.sort(realApps);
+        allApps = realApps;
     }
 
     private void refreshDisplayedApps() {
         if (appsDirty) {
             appsDirty = false;
             allApps = AppLoader.loadApps(this);
+            mergeBookmarksIntoApps();
             letterBar.updateApps(allApps);
             return;
         }
