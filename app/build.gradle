@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.androdash'
+    namespace 'de.codevoid.androdash'
     compileSdk 35
 
     buildFeatures {
@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.androdash"
+        applicationId "de.codevoid.androdash"
         minSdk 34
         targetSdk 35
         versionCode 1

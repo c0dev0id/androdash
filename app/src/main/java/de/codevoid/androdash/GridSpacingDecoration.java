@@ -1,4 +1,4 @@
-package com.androdash;
+package de.codevoid.androdash;
 
 import android.graphics.Rect;
 import android.view.View;

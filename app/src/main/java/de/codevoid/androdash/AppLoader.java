@@ -1,4 +1,4 @@
-package com.androdash;
+package de.codevoid.androdash;
 
 import android.content.Context;
 import android.content.Intent;
