@@ -28,12 +28,25 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.widget.Toast;
+
+import androidx.core.content.FileProvider;
+
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -58,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean pickingImageForFolder = false;
 
     private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private ActivityResultLauncher<Intent> backupImportLauncher;
 
     private final BroadcastReceiver packageReceiver = new BroadcastReceiver() {
         @Override
@@ -174,6 +188,37 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
+        backupImportLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri fileUri = result.getData().getData();
+                        if (fileUri == null) return;
+                        try {
+                            InputStream is = getContentResolver().openInputStream(fileUri);
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                            StringBuilder sb = new StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line);
+                            }
+                            reader.close();
+                            if (is != null) is.close();
+
+                            JSONObject json = new JSONObject(sb.toString());
+                            BackupManager backupManager = new BackupManager(this, bookmarkStore, folderStore);
+                            if (backupManager.importFromJson(json)) {
+                                refreshAfterImport();
+                                Toast.makeText(this, "Backup restored", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(this, "Invalid backup file", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Failed to read backup file", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+
         adapter.setOnConfigToggleListener(new AppGridAdapter.OnConfigToggleListener() {
             @Override
             public void onShowAllAppsChanged(boolean showAll) {
@@ -246,6 +291,21 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("image/*");
                 imagePickerLauncher.launch(intent);
+            }
+        });
+
+        adapter.setOnBackupListener(new AppGridAdapter.OnBackupListener() {
+            @Override
+            public void onExportRequested() {
+                performBackupExport();
+            }
+
+            @Override
+            public void onImportRequested() {
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.setType("*/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                backupImportLauncher.launch(intent);
             }
         });
 
@@ -580,6 +640,45 @@ public class MainActivity extends AppCompatActivity {
 
         adapter.setHistoryApps(historyList);
         adapter.updateApps(displayApps);
+    }
+
+    private void performBackupExport() {
+        BackupManager backupManager = new BackupManager(this, bookmarkStore, folderStore);
+        JSONObject json = backupManager.exportToJson();
+        if (json == null) {
+            Toast.makeText(this, "Failed to create backup", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
+            String filename = "androdash-backup-" + timestamp + ".json";
+            File cacheFile = new File(getCacheDir(), filename);
+            FileOutputStream fos = new FileOutputStream(cacheFile);
+            fos.write(json.toString(2).getBytes());
+            fos.close();
+
+            Uri fileUri = FileProvider.getUriForFile(this,
+                    getPackageName() + ".fileprovider", cacheFile);
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("application/json");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(shareIntent, "Save Backup"));
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed to export backup", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void refreshAfterImport() {
+        hiddenAppsStore = new HiddenAppsStore(this);
+        appHistoryStore = new AppHistoryStore(this);
+        letterBarPositionStore = new LetterBarPositionStore(this);
+        matchMethodStore = new MatchMethodStore(this);
+        letterSortStore = new LetterSortStore(this);
+        allApps = AppLoader.loadApps(this);
+        mergeBookmarksIntoApps();
+        mergeFoldersIntoApps();
+        rebuildLayout();
     }
 
     private void registerPackageReceiver() {
