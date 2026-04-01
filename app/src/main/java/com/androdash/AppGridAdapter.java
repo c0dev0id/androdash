@@ -79,6 +79,11 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         void onPickImageForFolder();
     }
 
+    public interface OnBackupListener {
+        void onExportRequested();
+        void onImportRequested();
+    }
+
     private final List<AppModel> apps = new ArrayList<>();
     private final List<AppModel> historyApps = new ArrayList<>();
     private final Context context;
@@ -95,6 +100,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnAppHiddenChangedListener appHiddenChangedListener;
     private OnBookmarkChangedListener bookmarkChangedListener;
     private OnFolderChangedListener folderChangedListener;
+    private OnBackupListener backupListener;
     private boolean isUpdating = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -137,6 +143,10 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public void setOnFolderChangedListener(OnFolderChangedListener listener) {
         this.folderChangedListener = listener;
+    }
+
+    public void setOnBackupListener(OnBackupListener listener) {
+        this.backupListener = listener;
     }
 
     public void setPickedBookmarkIcon(Bitmap bitmap) {
@@ -358,6 +368,10 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             holder.label.setText("Add Folder");
             holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
             holder.itemView.setOnClickListener(v -> showFolderDialog(null));
+        } else if (position == 8) {
+            holder.label.setText("Backup");
+            holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
+            holder.itemView.setOnClickListener(v -> showBackupDialog());
         }
     }
 
@@ -505,7 +519,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        if (configMode) return 8;
+        if (configMode) return 9;
         return historyApps.size() + apps.size();
     }
 
@@ -1021,6 +1035,87 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     // ---- Folder selection dialog ----
+
+    private void showBackupDialog() {
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 32, 32, 32);
+
+        TextView title = new TextView(context);
+        title.setText("Backup");
+        title.setTextColor(context.getColor(R.color.text_primary));
+        title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+        title.setTypeface(title.getTypeface(), Typeface.BOLD);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        titleParams.bottomMargin = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
+        title.setLayoutParams(titleParams);
+        layout.addView(title);
+
+        AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
+                .setView(layout)
+                .create();
+
+        int spacing = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
+        int cardHeight = context.getResources().getDimensionPixelSize(R.dimen.app_card_height);
+
+        // Export button
+        TextView btnExport = new TextView(context);
+        btnExport.setText("Export");
+        btnExport.setBackgroundResource(R.drawable.bg_button);
+        btnExport.setGravity(Gravity.CENTER);
+        btnExport.setTextColor(context.getColor(R.color.text_primary));
+        btnExport.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        LinearLayout.LayoutParams exportLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
+        exportLp.bottomMargin = spacing;
+        btnExport.setLayoutParams(exportLp);
+        btnExport.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (backupListener != null) backupListener.onExportRequested();
+        });
+        layout.addView(btnExport);
+
+        // Import button
+        TextView btnImport = new TextView(context);
+        btnImport.setText("Import");
+        btnImport.setBackgroundResource(R.drawable.bg_button);
+        btnImport.setGravity(Gravity.CENTER);
+        btnImport.setTextColor(context.getColor(R.color.text_primary));
+        btnImport.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        LinearLayout.LayoutParams importLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
+        importLp.bottomMargin = spacing;
+        btnImport.setLayoutParams(importLp);
+        btnImport.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (backupListener != null) backupListener.onImportRequested();
+        });
+        layout.addView(btnImport);
+
+        // Cancel button
+        TextView btnCancel = new TextView(context);
+        btnCancel.setText("Cancel");
+        btnCancel.setBackgroundResource(R.drawable.bg_button);
+        btnCancel.setGravity(Gravity.CENTER);
+        btnCancel.setTextColor(context.getColor(R.color.text_primary));
+        btnCancel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        LinearLayout.LayoutParams cancelLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
+        btnCancel.setLayoutParams(cancelLp);
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        layout.addView(btnCancel);
+
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
+            window.setAttributes(params);
+        }
+    }
 
     private void showFolderSelectionDialog(AppModel app) {
         List<FolderStore.FolderData> folders = folderStore.getAll();
