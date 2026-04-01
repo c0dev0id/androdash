@@ -29,6 +29,7 @@ public class LetterBar {
     }
 
     private static final char GEAR_CHAR = '\u2699';
+    private static final char FOLDER_CHAR = '\u2302'; // ⌂
 
     private final Context context;
     private final LinearLayout container;
@@ -41,6 +42,10 @@ public class LetterBar {
     private List<AppModel> lastFilteredApps;
     private int focusedAvailableIndex = -1; // -1 = no focus; index into available (non-selected) letters
 
+    // Folder mode state
+    private String activeFolderId = null;
+    private List<AppModel> folderContents = null;
+
     public LetterBar(Context context, LinearLayout container, ViewGroup scrollView) {
         this.context = context;
         this.container = container;
@@ -51,6 +56,8 @@ public class LetterBar {
         this.allApps = apps;
         selectedLetters.clear();
         focusedAvailableIndex = -1;
+        activeFolderId = null;
+        folderContents = null;
         updateButtons();
     }
 
@@ -85,10 +92,32 @@ public class LetterBar {
         updateButtons();
     }
 
+    public void enterFolderMode(String folderId, List<AppModel> contents) {
+        this.activeFolderId = folderId;
+        this.folderContents = contents;
+        selectedLetters.add(FOLDER_CHAR);
+        focusedAvailableIndex = -1;
+        updateButtons();
+    }
+
+    public boolean isFolderMode() {
+        return activeFolderId != null;
+    }
+
+    public String getActiveFolderId() {
+        return activeFolderId;
+    }
+
+    private void clearFolderState() {
+        activeFolderId = null;
+        folderContents = null;
+    }
+
     public List<AppModel> getFilteredApps() {
+        List<AppModel> sourceApps = (activeFolderId != null) ? folderContents : allApps;
         String prefix = getPrefix();
         if (prefix.isEmpty()) {
-            lastFilteredApps = new ArrayList<>(allApps);
+            lastFilteredApps = new ArrayList<>(sourceApps);
             return lastFilteredApps;
         }
 
@@ -96,7 +125,7 @@ public class LetterBar {
                 : MatchMethodStore.METHOD_BEGINNING;
 
         List<AppModel> filtered = new ArrayList<>();
-        for (AppModel app : allApps) {
+        for (AppModel app : sourceApps) {
             String upper = app.label.toUpperCase();
             if (method == MatchMethodStore.METHOD_BEGINNING) {
                 if (upper.startsWith(prefix)) filtered.add(app);
@@ -134,9 +163,13 @@ public class LetterBar {
 
     private String getPrefix() {
         StringBuilder sb = new StringBuilder();
+        boolean afterFolder = (activeFolderId == null);
         for (Character c : selectedLetters) {
-            if (c == GEAR_CHAR) continue;
-            sb.append(c);
+            if (c == GEAR_CHAR || c == FOLDER_CHAR) {
+                if (c == FOLDER_CHAR) afterFolder = true;
+                continue;
+            }
+            if (afterFolder) sb.append(c);
         }
         return sb.toString();
     }
@@ -289,7 +322,7 @@ public class LetterBar {
         for (int i = 0; i < container.getChildCount(); i++) {
             Button btn = (Button) container.getChildAt(i);
             String tag = (String) btn.getTag();
-            if (tag != null && tag.startsWith("a:") && !tag.equals("a:" + GEAR_CHAR)) {
+            if (tag != null && tag.startsWith("a:") && !tag.equals("a:" + GEAR_CHAR) && !tag.equals("a:" + FOLDER_CHAR)) {
                 boolean isFocused = (availableCount == focusedAvailableIndex);
                 if (isFocused) {
                     btn.setBackgroundResource(R.drawable.bg_button_focused);
@@ -316,17 +349,20 @@ public class LetterBar {
 
     public boolean removeLastLetter() {
         if (selectedLetters.isEmpty()) return false;
-        selectedLetters.remove(selectedLetters.size() - 1);
+        char removed = selectedLetters.remove(selectedLetters.size() - 1);
+        if (removed == FOLDER_CHAR) {
+            clearFolderState();
+        }
         focusedAvailableIndex = -1;
         updateButtons();
         return true;
     }
 
-    /** Returns the available (non-selected, non-gear) letters from the current button list. */
+    /** Returns the available (non-selected, non-gear, non-folder) letters from the current button list. */
     private List<Character> getAvailableLetters() {
         List<Character> result = new ArrayList<>();
         for (ButtonSpec spec : computeTargetButtons()) {
-            if (!spec.selected && spec.letter != GEAR_CHAR) {
+            if (!spec.selected && spec.letter != GEAR_CHAR && spec.letter != FOLDER_CHAR) {
                 result.add(spec.letter);
             }
         }
@@ -405,6 +441,7 @@ public class LetterBar {
     public void clearSelection() {
         selectedLetters.clear();
         focusedAvailableIndex = -1;
+        clearFolderState();
         updateButtons();
     }
 
@@ -413,11 +450,15 @@ public class LetterBar {
         while (selectedLetters.size() > index) {
             selectedLetters.remove(selectedLetters.size() - 1);
         }
+        // If the folder char was removed, exit folder mode
+        if (!selectedLetters.contains(FOLDER_CHAR)) {
+            clearFolderState();
+        }
         updateButtons();
     }
 
     private void onAvailableLetterClick(Character c) {
-        if (letterSortStore != null && letterSortStore.isUsageSort() && c != GEAR_CHAR) {
+        if (letterSortStore != null && letterSortStore.isUsageSort() && c != GEAR_CHAR && c != FOLDER_CHAR) {
             letterSortStore.recordSelection(selectedLetters.size(), c);
         }
         selectedLetters.add(c);
@@ -427,7 +468,7 @@ public class LetterBar {
     private Button createLetterButton(char letter, boolean selected) {
         Button btn = new Button(context);
         btn.setText(String.valueOf(letter));
-        btn.setAllCaps(letter != GEAR_CHAR);
+        btn.setAllCaps(letter != GEAR_CHAR && letter != FOLDER_CHAR);
         btn.setTextColor(context.getColor(R.color.text_primary));
         btn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 35);
         btn.setTypeface(btn.getTypeface(), Typeface.BOLD);
