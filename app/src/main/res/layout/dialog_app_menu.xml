@@ -137,6 +137,19 @@
                 android:layout_marginBottom="@dimen/grid_spacing" />
 
             <TextView
+                android:id="@+id/btnAddToFolder"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/app_card_height"
+                android:background="@drawable/bg_button"
+                android:gravity="center"
+                android:text="Add to Folder"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek"
+                android:layout_marginBottom="@dimen/grid_spacing"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/btnCancel"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/app_card_height"

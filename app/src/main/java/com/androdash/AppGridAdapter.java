@@ -7,6 +7,10 @@ import android.content.pm.LauncherApps;
 import android.content.pm.ShortcutInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ClipDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -23,6 +27,7 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -68,6 +73,12 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         void onPickImageForBookmark();
     }
 
+    public interface OnFolderChangedListener {
+        void onFolderChanged();
+        void onFolderClicked(AppModel folder);
+        void onPickImageForFolder();
+    }
+
     private final List<AppModel> apps = new ArrayList<>();
     private final List<AppModel> historyApps = new ArrayList<>();
     private final Context context;
@@ -77,22 +88,31 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final AppHistoryStore appHistoryStore;
     private final MatchMethodStore matchMethodStore;
     private final BookmarkStore bookmarkStore;
+    private final FolderStore folderStore;
     private boolean configMode = false;
     private boolean showAllApps = false;
     private OnConfigToggleListener configToggleListener;
     private OnAppHiddenChangedListener appHiddenChangedListener;
     private OnBookmarkChangedListener bookmarkChangedListener;
+    private OnFolderChangedListener folderChangedListener;
     private boolean isUpdating = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     // Transient state for bookmark image picker
     private Bitmap pendingBookmarkIcon;
-    private ImageView pendingIconPreview;
+    private ImageView pendingBookmarkIconPreview;
+
+    // Transient state for folder image picker
+    private Bitmap pendingFolderIcon;
+    private ImageView pendingFolderIconPreview;
+
+    // Active folder context (set when viewing inside a folder)
+    private String activeFolderId = null;
 
     public AppGridAdapter(Context context, HiddenAppsStore hiddenAppsStore,
                           LetterSortStore letterSortStore, LetterBarPositionStore letterBarPositionStore,
                           AppHistoryStore appHistoryStore, MatchMethodStore matchMethodStore,
-                          BookmarkStore bookmarkStore) {
+                          BookmarkStore bookmarkStore, FolderStore folderStore) {
         this.context = context;
         this.hiddenAppsStore = hiddenAppsStore;
         this.letterSortStore = letterSortStore;
@@ -100,6 +120,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.appHistoryStore = appHistoryStore;
         this.matchMethodStore = matchMethodStore;
         this.bookmarkStore = bookmarkStore;
+        this.folderStore = folderStore;
     }
 
     public void setOnConfigToggleListener(OnConfigToggleListener listener) {
@@ -114,11 +135,26 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.bookmarkChangedListener = listener;
     }
 
+    public void setOnFolderChangedListener(OnFolderChangedListener listener) {
+        this.folderChangedListener = listener;
+    }
+
     public void setPickedBookmarkIcon(Bitmap bitmap) {
         this.pendingBookmarkIcon = bitmap;
-        if (pendingIconPreview != null) {
-            pendingIconPreview.setImageBitmap(bitmap);
+        if (pendingBookmarkIconPreview != null) {
+            pendingBookmarkIconPreview.setImageBitmap(bitmap);
         }
+    }
+
+    public void setPickedFolderIcon(Bitmap bitmap) {
+        this.pendingFolderIcon = bitmap;
+        if (pendingFolderIconPreview != null) {
+            pendingFolderIconPreview.setImageBitmap(bitmap);
+        }
+    }
+
+    public void setActiveFolderId(String folderId) {
+        this.activeFolderId = folderId;
     }
 
     public void setConfigMode(boolean configMode) {
@@ -175,7 +211,11 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private void bindHistoryItem(AppViewHolder holder, int position) {
         AppModel app = historyApps.get(position);
-        holder.icon.setImageDrawable(app.icon);
+        if (app.icon != null) {
+            holder.icon.setImageDrawable(app.icon);
+        } else if (app.isFolder) {
+            holder.icon.setImageDrawable(createDefaultFolderIcon());
+        }
         holder.label.setText(app.label);
         holder.itemView.setAlpha(1.0f);
         holder.itemView.setBackgroundResource(R.drawable.bg_app_card_history);
@@ -205,23 +245,38 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private void bindAppItem(AppViewHolder holder, int position) {
         AppModel app = apps.get(position);
-        holder.icon.setImageDrawable(app.icon);
+        if (app.icon != null) {
+            holder.icon.setImageDrawable(app.icon);
+        } else if (app.isFolder) {
+            holder.icon.setImageDrawable(createDefaultFolderIcon());
+        }
         holder.label.setText(app.label);
         holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
 
         boolean isHidden = hiddenAppsStore.isHidden(app.packageName);
         holder.itemView.setAlpha(isHidden && showAllApps ? 0.4f : 1.0f);
 
-        holder.itemView.setOnClickListener(v -> launchApp(app));
-
-        holder.itemView.setOnLongClickListener(v -> {
-            if (app.isBookmark) {
-                showBookmarkMenu(app);
-            } else {
-                showAppMenu(app);
-            }
-            return true;
-        });
+        if (app.isFolder) {
+            holder.itemView.setOnClickListener(v -> {
+                if (folderChangedListener != null) {
+                    folderChangedListener.onFolderClicked(app);
+                }
+            });
+            holder.itemView.setOnLongClickListener(v -> {
+                showFolderMenu(app);
+                return true;
+            });
+        } else {
+            holder.itemView.setOnClickListener(v -> launchApp(app));
+            holder.itemView.setOnLongClickListener(v -> {
+                if (app.isBookmark) {
+                    showBookmarkMenu(app);
+                } else {
+                    showAppMenu(app);
+                }
+                return true;
+            });
+        }
     }
 
     private void bindConfigItem(ConfigViewHolder holder, int position) {
@@ -299,6 +354,10 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             holder.label.setText("Add Bookmark");
             holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
             holder.itemView.setOnClickListener(v -> showBookmarkDialog(null));
+        } else if (position == 7) {
+            holder.label.setText("Add Folder");
+            holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
+            holder.itemView.setOnClickListener(v -> showFolderDialog(null));
         }
     }
 
@@ -446,7 +505,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        if (configMode) return 7;
+        if (configMode) return 8;
         return historyApps.size() + apps.size();
     }
 
@@ -468,7 +527,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         TextView btnSave = dialogView.findViewById(R.id.btnBookmarkSave);
 
         pendingBookmarkIcon = null;
-        pendingIconPreview = iconPreview;
+        pendingBookmarkIconPreview = iconPreview;
 
         if (existing != null) {
             title.setText("Edit Bookmark");
@@ -487,7 +546,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         });
 
         btnCancel.setOnClickListener(v -> {
-            pendingIconPreview = null;
+            pendingBookmarkIconPreview = null;
             pendingBookmarkIcon = null;
             dialog.dismiss();
         });
@@ -523,7 +582,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 downloadFavicon(id, faviconUrl);
             }
 
-            pendingIconPreview = null;
+            pendingBookmarkIconPreview = null;
             pendingBookmarkIcon = null;
             dialog.dismiss();
 
@@ -576,6 +635,43 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 bookmarkChangedListener.onBookmarkChanged();
             }
         });
+
+        TextView btnAddToFolder = dialogView.findViewById(R.id.btnAddToFolder);
+        if (activeFolderId != null) {
+            FolderStore.FolderData folder = folderStore.getById(activeFolderId);
+            String folderName = folder != null ? folder.label : "Folder";
+            btnAddToFolder.setText("Remove from " + folderName);
+            btnAddToFolder.setVisibility(View.VISIBLE);
+            btnAddToFolder.setOnClickListener(v -> {
+                folderStore.removeFromFolder(activeFolderId, app.packageName);
+                dialog.dismiss();
+                if (folderChangedListener != null) {
+                    folderChangedListener.onFolderChanged();
+                }
+            });
+        } else if (folderStore.hasFolders()) {
+            String existingFolderId = folderStore.getFolderForPackage(app.packageName);
+            if (existingFolderId != null) {
+                FolderStore.FolderData existingFolder = folderStore.getById(existingFolderId);
+                String folderName = existingFolder != null ? existingFolder.label : "Folder";
+                btnAddToFolder.setText("Remove from " + folderName);
+                btnAddToFolder.setVisibility(View.VISIBLE);
+                btnAddToFolder.setOnClickListener(v -> {
+                    folderStore.removeFromFolder(existingFolderId, app.packageName);
+                    dialog.dismiss();
+                    if (folderChangedListener != null) {
+                        folderChangedListener.onFolderChanged();
+                    }
+                });
+            } else {
+                btnAddToFolder.setText("Add to Folder");
+                btnAddToFolder.setVisibility(View.VISIBLE);
+                btnAddToFolder.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    showFolderSelectionDialog(app);
+                });
+            }
+        }
 
         TextView btnCancel = dialogView.findViewById(R.id.btnCancelBookmark);
         btnCancel.setOnClickListener(v -> dialog.dismiss());
@@ -670,6 +766,44 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             dialog.dismiss();
         });
 
+        TextView btnAddToFolder = dialogView.findViewById(R.id.btnAddToFolder);
+        if (activeFolderId != null) {
+            // Inside a folder — show "Remove from <folder>"
+            FolderStore.FolderData folder = folderStore.getById(activeFolderId);
+            String folderName = folder != null ? folder.label : "Folder";
+            btnAddToFolder.setText("Remove from " + folderName);
+            btnAddToFolder.setVisibility(View.VISIBLE);
+            btnAddToFolder.setOnClickListener(v -> {
+                folderStore.removeFromFolder(activeFolderId, app.packageName);
+                dialog.dismiss();
+                if (folderChangedListener != null) {
+                    folderChangedListener.onFolderChanged();
+                }
+            });
+        } else if (folderStore.hasFolders()) {
+            String existingFolderId = folderStore.getFolderForPackage(app.packageName);
+            if (existingFolderId != null) {
+                FolderStore.FolderData folder = folderStore.getById(existingFolderId);
+                String folderName = folder != null ? folder.label : "Folder";
+                btnAddToFolder.setText("Remove from " + folderName);
+                btnAddToFolder.setVisibility(View.VISIBLE);
+                btnAddToFolder.setOnClickListener(v -> {
+                    folderStore.removeFromFolder(existingFolderId, app.packageName);
+                    dialog.dismiss();
+                    if (folderChangedListener != null) {
+                        folderChangedListener.onFolderChanged();
+                    }
+                });
+            } else {
+                btnAddToFolder.setText("Add to Folder");
+                btnAddToFolder.setVisibility(View.VISIBLE);
+                btnAddToFolder.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    showFolderSelectionDialog(app);
+                });
+            }
+        }
+
         TextView btnCancel = dialogView.findViewById(R.id.btnCancel);
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
@@ -752,6 +886,235 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
             window.setAttributes(params);
         }
+    }
+
+    // ---- Folder dialog (Add / Edit) ----
+
+    private void showFolderDialog(FolderStore.FolderData existing) {
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_folder, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
+                .setView(dialogView)
+                .create();
+
+        TextView title = dialogView.findViewById(R.id.folderDialogTitle);
+        EditText labelField = dialogView.findViewById(R.id.folderLabel);
+        ImageView iconPreview = dialogView.findViewById(R.id.folderIconPreview);
+        TextView btnPickImage = dialogView.findViewById(R.id.btnPickFolderImage);
+        TextView btnCancel = dialogView.findViewById(R.id.btnFolderCancel);
+        TextView btnSave = dialogView.findViewById(R.id.btnFolderSave);
+
+        pendingFolderIcon = null;
+        pendingFolderIconPreview = iconPreview;
+
+        // Set default folder icon in preview
+        iconPreview.setImageDrawable(createDefaultFolderIcon());
+
+        if (existing != null) {
+            title.setText("Edit Folder");
+            labelField.setText(existing.label);
+            Drawable existingIcon = folderStore.loadIconDrawable(existing.id);
+            if (existingIcon != null) {
+                iconPreview.setImageDrawable(existingIcon);
+            }
+        }
+
+        btnPickImage.setOnClickListener(v -> {
+            if (folderChangedListener != null) {
+                folderChangedListener.onPickImageForFolder();
+            }
+        });
+
+        btnCancel.setOnClickListener(v -> {
+            pendingFolderIconPreview = null;
+            pendingFolderIcon = null;
+            dialog.dismiss();
+        });
+
+        btnSave.setOnClickListener(v -> {
+            String label = labelField.getText().toString().trim();
+            if (label.isEmpty()) return;
+
+            String id = existing != null ? existing.id : FolderStore.generateId();
+            boolean hasCustomIcon = pendingFolderIcon != null
+                    || (existing != null && existing.hasCustomIcon && pendingFolderIcon == null);
+
+            FolderStore.FolderData data = new FolderStore.FolderData(id, label, hasCustomIcon);
+
+            if (pendingFolderIcon != null) {
+                folderStore.saveIcon(id, pendingFolderIcon);
+                data.hasCustomIcon = true;
+            }
+
+            folderStore.save(data);
+
+            pendingFolderIconPreview = null;
+            pendingFolderIcon = null;
+            dialog.dismiss();
+
+            if (folderChangedListener != null) {
+                folderChangedListener.onFolderChanged();
+            }
+        });
+
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
+            window.setAttributes(params);
+        }
+    }
+
+    // ---- Folder long-press menu ----
+
+    private void showFolderMenu(AppModel app) {
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_folder_menu, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
+                .setView(dialogView)
+                .create();
+
+        ImageView headerIcon = dialogView.findViewById(R.id.dialogFolderIcon);
+        TextView headerLabel = dialogView.findViewById(R.id.dialogFolderLabel);
+        if (app.icon != null) {
+            headerIcon.setImageDrawable(app.icon);
+        } else {
+            headerIcon.setImageDrawable(createDefaultFolderIcon());
+        }
+        headerLabel.setText(app.label);
+
+        String folderId = app.packageName.substring("folder://".length());
+
+        TextView btnEdit = dialogView.findViewById(R.id.btnEditFolder);
+        btnEdit.setOnClickListener(v -> {
+            dialog.dismiss();
+            FolderStore.FolderData data = folderStore.getById(folderId);
+            if (data != null) {
+                showFolderDialog(data);
+            }
+        });
+
+        TextView btnDelete = dialogView.findViewById(R.id.btnDeleteFolder);
+        btnDelete.setOnClickListener(v -> {
+            folderStore.delete(folderId);
+            dialog.dismiss();
+            if (folderChangedListener != null) {
+                folderChangedListener.onFolderChanged();
+            }
+        });
+
+        TextView btnCancelFolder = dialogView.findViewById(R.id.btnCancelFolder);
+        btnCancelFolder.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
+            window.setAttributes(params);
+        }
+    }
+
+    // ---- Folder selection dialog ----
+
+    private void showFolderSelectionDialog(AppModel app) {
+        List<FolderStore.FolderData> folders = folderStore.getAll();
+        if (folders.isEmpty()) return;
+
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 32, 32, 32);
+
+        TextView title = new TextView(context);
+        title.setText("Add to Folder");
+        title.setTextColor(context.getColor(R.color.text_primary));
+        title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+        title.setTypeface(title.getTypeface(), Typeface.BOLD);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        titleParams.bottomMargin = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
+        title.setLayoutParams(titleParams);
+        layout.addView(title);
+
+        AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
+                .setView(layout)
+                .create();
+
+        int spacing = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
+        int cardHeight = context.getResources().getDimensionPixelSize(R.dimen.app_card_height);
+
+        for (int i = 0; i < folders.size(); i++) {
+            FolderStore.FolderData folder = folders.get(i);
+            TextView btn = new TextView(context);
+            btn.setText(folder.label);
+            btn.setBackgroundResource(R.drawable.bg_button);
+            btn.setGravity(Gravity.CENTER);
+            btn.setTextColor(context.getColor(R.color.text_primary));
+            btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
+            if (i < folders.size() - 1) {
+                lp.bottomMargin = spacing;
+            }
+            btn.setLayoutParams(lp);
+
+            btn.setOnClickListener(v -> {
+                folderStore.addToFolder(folder.id, app.packageName);
+                dialog.dismiss();
+                if (folderChangedListener != null) {
+                    folderChangedListener.onFolderChanged();
+                }
+            });
+
+            layout.addView(btn);
+        }
+
+        // Cancel button
+        TextView btnCancel = new TextView(context);
+        btnCancel.setText("Cancel");
+        btnCancel.setBackgroundResource(R.drawable.bg_button);
+        btnCancel.setGravity(Gravity.CENTER);
+        btnCancel.setTextColor(context.getColor(R.color.text_primary));
+        btnCancel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        LinearLayout.LayoutParams cancelLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
+        cancelLp.topMargin = spacing;
+        btnCancel.setLayoutParams(cancelLp);
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        layout.addView(btnCancel);
+
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
+            window.setAttributes(params);
+        }
+    }
+
+    // ---- Default folder icon ----
+
+    private Drawable createDefaultFolderIcon() {
+        int size = 96;
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(context.getColor(R.color.text_primary));
+        paint.setTextSize(64);
+        paint.setTypeface(Typeface.DEFAULT_BOLD);
+        paint.setTextAlign(Paint.Align.CENTER);
+        Paint.FontMetrics fm = paint.getFontMetrics();
+        float y = (size - fm.top - fm.bottom) / 2f;
+        canvas.drawText("\u2302", size / 2f, y, paint);
+        return new BitmapDrawable(context.getResources(), bitmap);
     }
 
     static class AppViewHolder extends RecyclerView.ViewHolder {

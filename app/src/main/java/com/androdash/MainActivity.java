@@ -50,10 +50,12 @@ public class MainActivity extends AppCompatActivity {
     private AppHistoryStore appHistoryStore;
     private MatchMethodStore matchMethodStore;
     private BookmarkStore bookmarkStore;
+    private FolderStore folderStore;
     private int spanCount;
     private boolean wasConfigMode = false;
     private boolean appsDirty = false;
     private boolean isResumed = false;
+    private boolean pickingImageForFolder = false;
 
     private ActivityResultLauncher<Intent> imagePickerLauncher;
 
@@ -61,6 +63,16 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             appsDirty = true;
+            // Clean up folder membership when an app is uninstalled
+            if (Intent.ACTION_PACKAGE_REMOVED.equals(intent.getAction()) && folderStore != null) {
+                Uri data = intent.getData();
+                if (data != null) {
+                    String packageName = data.getSchemeSpecificPart();
+                    if (packageName != null) {
+                        folderStore.removePackageFromAllFolders(packageName);
+                    }
+                }
+            }
         }
     };
 
@@ -114,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
         appHistoryStore = new AppHistoryStore(this);
         matchMethodStore = new MatchMethodStore(this);
         bookmarkStore = new BookmarkStore(this);
+        folderStore = new FolderStore(this);
 
         rootLayout = findViewById(R.id.rootLayout);
         int baseSpacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
@@ -132,10 +145,10 @@ public class MainActivity extends AppCompatActivity {
         appGrid.setClipToPadding(false);
 
         adapter = new AppGridAdapter(this, hiddenAppsStore, letterSortStore,
-                letterBarPositionStore, appHistoryStore, matchMethodStore, bookmarkStore);
+                letterBarPositionStore, appHistoryStore, matchMethodStore, bookmarkStore, folderStore);
         appGrid.setAdapter(adapter);
 
-        // Register image picker for bookmarks
+        // Register image picker for bookmarks and folders
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -149,10 +162,15 @@ public class MainActivity extends AppCompatActivity {
                             if (bitmap != null) {
                                 Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 96, 96, true);
                                 if (scaled != bitmap) bitmap.recycle();
-                                adapter.setPickedBookmarkIcon(scaled);
+                                if (pickingImageForFolder) {
+                                    adapter.setPickedFolderIcon(scaled);
+                                } else {
+                                    adapter.setPickedBookmarkIcon(scaled);
+                                }
                             }
                         } catch (Exception ignored) {
                         }
+                        pickingImageForFolder = false;
                     }
                 });
 
@@ -191,12 +209,40 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onBookmarkChanged() {
                 mergeBookmarksIntoApps();
+                mergeFoldersIntoApps();
                 letterBar.updateApps(allApps);
                 refreshDisplayedApps();
             }
 
             @Override
             public void onPickImageForBookmark() {
+                pickingImageForFolder = false;
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/*");
+                imagePickerLauncher.launch(intent);
+            }
+        });
+
+        adapter.setOnFolderChangedListener(new AppGridAdapter.OnFolderChangedListener() {
+            @Override
+            public void onFolderChanged() {
+                mergeBookmarksIntoApps();
+                mergeFoldersIntoApps();
+                letterBar.updateApps(allApps);
+                refreshDisplayedApps();
+            }
+
+            @Override
+            public void onFolderClicked(AppModel folder) {
+                String folderId = folder.packageName.substring("folder://".length());
+                List<AppModel> contents = getFolderContents(folderId);
+                letterBar.enterFolderMode(folderId, contents);
+                adapter.setActiveFolderId(folderId);
+            }
+
+            @Override
+            public void onPickImageForFolder() {
+                pickingImageForFolder = true;
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("image/*");
                 imagePickerLauncher.launch(intent);
@@ -230,6 +276,7 @@ public class MainActivity extends AppCompatActivity {
             appsDirty = false;
             allApps = AppLoader.loadApps(this);
             mergeBookmarksIntoApps();
+            mergeFoldersIntoApps();
             letterBar.updateApps(allApps);
         }
 
@@ -334,6 +381,11 @@ public class MainActivity extends AppCompatActivity {
         letterBar.setLetterSortStore(letterSortStore);
         letterBar.setMatchMethodStore(matchMethodStore);
         letterBar.setOnFilterChangedListener(filteredApps -> {
+            // Sync folder state with adapter
+            if (!letterBar.isFolderMode()) {
+                adapter.setActiveFolderId(null);
+            }
+
             boolean inConfig = letterBar.isConfigMode();
             if (inConfig != wasConfigMode) {
                 wasConfigMode = inConfig;
@@ -403,14 +455,15 @@ public class MainActivity extends AppCompatActivity {
     private void refreshApps() {
         allApps = AppLoader.loadApps(this);
         mergeBookmarksIntoApps();
+        mergeFoldersIntoApps();
         letterBar.setApps(allApps);
     }
 
     private void mergeBookmarksIntoApps() {
-        // Remove any existing bookmarks from allApps
+        // Remove any existing bookmarks and folders from allApps
         List<AppModel> realApps = new ArrayList<>();
         for (AppModel app : allApps) {
-            if (!app.isBookmark) {
+            if (!app.isBookmark && !app.isFolder) {
                 realApps.add(app);
             }
         }
@@ -428,11 +481,45 @@ public class MainActivity extends AppCompatActivity {
         allApps = realApps;
     }
 
+    private void mergeFoldersIntoApps() {
+        // Remove any existing folders from allApps
+        List<AppModel> withoutFolders = new ArrayList<>();
+        for (AppModel app : allApps) {
+            if (!app.isFolder) {
+                withoutFolders.add(app);
+            }
+        }
+
+        // Add folders
+        List<FolderStore.FolderData> folders = folderStore.getAll();
+        for (FolderStore.FolderData f : folders) {
+            Drawable icon = folderStore.loadIconDrawable(f.id);
+            withoutFolders.add(new AppModel(f.label, f.getPackageName(), icon, null, false, true));
+        }
+
+        Collections.sort(withoutFolders);
+        allApps = withoutFolders;
+    }
+
+    private List<AppModel> getFolderContents(String folderId) {
+        List<String> memberPackages = folderStore.getMembers(folderId);
+        Set<String> memberSet = new HashSet<>(memberPackages);
+        List<AppModel> contents = new ArrayList<>();
+        for (AppModel app : allApps) {
+            if (memberSet.contains(app.packageName)) {
+                contents.add(app);
+            }
+        }
+        Collections.sort(contents);
+        return contents;
+    }
+
     private void refreshDisplayedApps() {
         if (appsDirty) {
             appsDirty = false;
             allApps = AppLoader.loadApps(this);
             mergeBookmarksIntoApps();
+            mergeFoldersIntoApps();
             letterBar.updateApps(allApps);
             return;
         }
@@ -448,6 +535,17 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
             displayApps = letterFiltered;
+        }
+
+        // When not in folder mode, hide items that are in a folder
+        if (!letterBar.isFolderMode()) {
+            List<AppModel> nonFoldered = new ArrayList<>();
+            for (AppModel app : displayApps) {
+                if (!folderStore.isInAnyFolder(app.packageName)) {
+                    nonFoldered.add(app);
+                }
+            }
+            displayApps = nonFoldered;
         }
 
         List<AppModel> historyList = new ArrayList<>();

@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Header: bookmark icon + label -->
+    <!-- Header: folder icon + label -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -14,14 +14,14 @@
         android:layout_marginBottom="12dp">
 
         <ImageView
-            android:id="@+id/dialogBookmarkIcon"
+            android:id="@+id/dialogFolderIcon"
             android:layout_width="@dimen/app_icon_size"
             android:layout_height="@dimen/app_icon_size"
             android:scaleType="fitCenter"
             android:contentDescription="@null" />
 
         <TextView
-            android:id="@+id/dialogBookmarkLabel"
+            android:id="@+id/dialogFolderLabel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -35,7 +35,7 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/btnEditBookmark"
+        android:id="@+id/btnEditFolder"
         android:layout_width="match_parent"
         android:layout_height="@dimen/app_card_height"
         android:background="@drawable/bg_button"
@@ -47,7 +47,7 @@
         android:layout_marginBottom="@dimen/grid_spacing" />
 
     <TextView
-        android:id="@+id/btnDeleteBookmark"
+        android:id="@+id/btnDeleteFolder"
         android:layout_width="match_parent"
         android:layout_height="@dimen/app_card_height"
         android:background="@drawable/bg_button"
@@ -59,20 +59,7 @@
         android:layout_marginBottom="@dimen/grid_spacing" />
 
     <TextView
-        android:id="@+id/btnAddToFolder"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_card_height"
-        android:background="@drawable/bg_button"
-        android:gravity="center"
-        android:text="Add to Folder"
-        android:textColor="@color/text_primary"
-        android:textSize="@dimen/text_size_small"
-        android:fontFamily="@font/apotek"
-        android:layout_marginBottom="@dimen/grid_spacing"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/btnCancelBookmark"
+        android:id="@+id/btnCancelFolder"
         android:layout_width="match_parent"
         android:layout_height="@dimen/app_card_height"
         android:background="@drawable/bg_button"
