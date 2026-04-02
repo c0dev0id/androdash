@@ -619,7 +619,7 @@ public class MainActivity extends AppCompatActivity {
             for (int i = 0; i < limit; i++) {
                 String pkg = recentPackages.get(i);
                 AppModel app = appsByPackage.get(pkg);
-                if (app != null && !hiddenAppsStore.isHidden(pkg)) {
+                if (app != null && !hiddenAppsStore.isHidden(pkg) && !hiddenAppsStore.isExcludedFromHistory(pkg)) {
                     historyList.add(app);
                 }
             }
