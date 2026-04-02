@@ -632,6 +632,19 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         String bookmarkId = app.packageName.substring("bookmark://".length());
 
+        boolean isBookmarkExcluded = hiddenAppsStore.isExcludedFromHistory(app.packageName);
+        TextView btnHideFromHistory = dialogView.findViewById(R.id.btnHideFromHistory);
+        btnHideFromHistory.setText(isBookmarkExcluded ? "Show in History" : "Hide from History");
+        btnHideFromHistory.setOnClickListener(v -> {
+            if (isBookmarkExcluded) {
+                hiddenAppsStore.showApp(app.packageName);
+            } else {
+                hiddenAppsStore.excludeFromHistory(app.packageName);
+            }
+            if (appHiddenChangedListener != null) appHiddenChangedListener.onAppHiddenChanged();
+            dialog.dismiss();
+        });
+
         TextView btnEdit = dialogView.findViewById(R.id.btnEditBookmark);
         btnEdit.setOnClickListener(v -> {
             dialog.dismiss();
@@ -749,20 +762,34 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         headerLabel.setText(app.label);
 
         boolean isHidden = hiddenAppsStore.isHidden(app.packageName);
+        boolean isExcluded = hiddenAppsStore.isExcludedFromHistory(app.packageName);
 
         TextView btnHideShow = dialogView.findViewById(R.id.btnHideShow);
-        btnHideShow.setText(isHidden ? "Show" : "Hide");
-        btnHideShow.setOnClickListener(v -> {
-            if (isHidden) {
+        if (isHidden) {
+            // Current: Hide → next action: Hide from History
+            btnHideShow.setText("Hide from History");
+            btnHideShow.setOnClickListener(v -> {
+                hiddenAppsStore.excludeFromHistory(app.packageName);
+                if (appHiddenChangedListener != null) appHiddenChangedListener.onAppHiddenChanged();
+                dialog.dismiss();
+            });
+        } else if (isExcluded) {
+            // Current: Hide from History → next action: Show
+            btnHideShow.setText("Show");
+            btnHideShow.setOnClickListener(v -> {
                 hiddenAppsStore.showApp(app.packageName);
-            } else {
+                if (appHiddenChangedListener != null) appHiddenChangedListener.onAppHiddenChanged();
+                dialog.dismiss();
+            });
+        } else {
+            // Current: Show → next action: Hide
+            btnHideShow.setText("Hide");
+            btnHideShow.setOnClickListener(v -> {
                 hiddenAppsStore.hideApp(app.packageName);
-            }
-            if (appHiddenChangedListener != null) {
-                appHiddenChangedListener.onAppHiddenChanged();
-            }
-            dialog.dismiss();
-        });
+                if (appHiddenChangedListener != null) appHiddenChangedListener.onAppHiddenChanged();
+                dialog.dismiss();
+            });
+        }
 
         TextView btnUninstall = dialogView.findViewById(R.id.btnUninstall);
         btnUninstall.setOnClickListener(v -> {
