@@ -766,7 +766,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         TextView btnHideShow = dialogView.findViewById(R.id.btnHideShow);
         if (isHidden) {
-            // Current: Hide → next action: Hide from History
             btnHideShow.setText("Hide from History");
             btnHideShow.setOnClickListener(v -> {
                 hiddenAppsStore.excludeFromHistory(app.packageName);
@@ -774,7 +773,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 dialog.dismiss();
             });
         } else if (isExcluded) {
-            // Current: Hide from History → next action: Show
             btnHideShow.setText("Show");
             btnHideShow.setOnClickListener(v -> {
                 hiddenAppsStore.showApp(app.packageName);
@@ -782,7 +780,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 dialog.dismiss();
             });
         } else {
-            // Current: Show → next action: Hide
             btnHideShow.setText("Hide");
             btnHideShow.setOnClickListener(v -> {
                 hiddenAppsStore.hideApp(app.packageName);
