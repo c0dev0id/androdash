@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -696,6 +697,20 @@ public class MainActivity extends AppCompatActivity {
             return super.dispatchKeyEvent(event);
         }
         int keyCode = event.getKeyCode();
+
+        // Drop keyboard-source events for keycodes the wired remote also emits.
+        // The remote enumerates as a USB-HID keyboard, so its presses arrive
+        // both via the DMD broadcast (handled by remoteListener) and as
+        // KeyEvents here. The broadcast is the single source of truth for
+        // remote behaviour, so suppress the duplicate KeyEvent.
+        if ((event.getSource() & InputDevice.SOURCE_KEYBOARD) == InputDevice.SOURCE_KEYBOARD
+                && (keyCode == DMD_KEY_LEFT
+                    || keyCode == DMD_KEY_RIGHT
+                    || keyCode == DMD_KEY_DOWN
+                    || keyCode == DMD_KEY_BUTTON1
+                    || keyCode == DMD_KEY_BUTTON2)) {
+            return true;
+        }
 
         // Backspace → remove last selected letter
         if (keyCode == KeyEvent.KEYCODE_DEL) {
