@@ -99,14 +99,14 @@ public class MainActivity extends AppCompatActivity {
             if (intent.getIntExtra("repeat", 0) != 0) return;
 
             String joy = intent.getStringExtra("joy");
-            if (joy != null && !joy.isEmpty()) {
-                switch (joy.charAt(0)) {
-                    case 'L': navigateFocus(View.FOCUS_LEFT);  return;
-                    case 'R': navigateFocus(View.FOCUS_RIGHT); return;
-                    case 'U': navigateFocus(View.FOCUS_UP);    return;
-                    case 'D': navigateFocus(View.FOCUS_DOWN);  return;
+            if (joy != null) {
+                switch (joy) {
+                    case "U5": navigateFocus(View.FOCUS_UP);    return;
+                    case "D5": navigateFocus(View.FOCUS_DOWN);  return;
+                    case "L5": navigateFocus(View.FOCUS_LEFT);  return;
+                    case "R5": navigateFocus(View.FOCUS_RIGHT); return;
                 }
-                return; // "Y0X0" neutral or unknown — ignore
+                return;
             }
 
             if (!intent.hasExtra("key_press")) return;
@@ -703,13 +703,6 @@ public class MainActivity extends AppCompatActivity {
             return super.dispatchKeyEvent(event);
         }
         int keyCode = event.getKeyCode();
-
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_DPAD_LEFT:  navigateFocus(View.FOCUS_LEFT);  return true;
-            case KeyEvent.KEYCODE_DPAD_RIGHT: navigateFocus(View.FOCUS_RIGHT); return true;
-            case KeyEvent.KEYCODE_DPAD_UP:    navigateFocus(View.FOCUS_UP);    return true;
-            case KeyEvent.KEYCODE_DPAD_DOWN:  navigateFocus(View.FOCUS_DOWN);  return true;
-        }
 
         if (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
             View focused = getCurrentFocus();
