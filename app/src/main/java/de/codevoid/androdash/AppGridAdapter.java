@@ -211,6 +211,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_app, parent, false);
+        view.setFocusable(true);
+        view.setFocusableInTouchMode(false);
         return new AppViewHolder(view);
     }
 
@@ -229,6 +231,9 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         holder.label.setText(app.label);
         holder.itemView.setAlpha(1.0f);
         holder.itemView.setBackgroundResource(R.drawable.bg_app_card_history);
+        holder.itemView.setOnFocusChangeListener((v, hasFocus) ->
+            v.setBackgroundResource(hasFocus ? R.drawable.bg_app_card_focused : R.drawable.bg_app_card_history));
+        if (holder.itemView.isFocused()) holder.itemView.setBackgroundResource(R.drawable.bg_app_card_focused);
 
         holder.itemView.setOnClickListener(v -> launchApp(app));
 
@@ -262,6 +267,9 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         holder.label.setText(app.label);
         holder.itemView.setBackgroundResource(R.drawable.bg_app_card);
+        holder.itemView.setOnFocusChangeListener((v, hasFocus) ->
+            v.setBackgroundResource(hasFocus ? R.drawable.bg_app_card_focused : R.drawable.bg_app_card));
+        if (holder.itemView.isFocused()) holder.itemView.setBackgroundResource(R.drawable.bg_app_card_focused);
 
         boolean isHidden = hiddenAppsStore.isHidden(app.packageName);
         holder.itemView.setAlpha(isHidden && showAllApps ? 0.4f : 1.0f);

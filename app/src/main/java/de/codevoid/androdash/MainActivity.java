@@ -11,7 +11,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -92,39 +91,39 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private static final String DMD_ACTION = "com.thorkracing.wireddevices.keypress";
-    private static final int DMD_KEY_LEFT     = 21;
-    private static final int DMD_KEY_RIGHT    = 22;
-    private static final int DMD_KEY_DOWN     = 20;
-    private static final int DMD_KEY_BUTTON1  = 66;
-    private static final int DMD_KEY_BUTTON2  = 111;
 
     private final BroadcastReceiver remoteListener = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (letterBar == null) return;
-            if (!intent.hasExtra("key_press")) return;
             if (intent.getIntExtra("repeat", 0) != 0) return;
 
+            String joy = intent.getStringExtra("joy");
+            if (joy != null && !joy.isEmpty()) {
+                switch (joy.charAt(0)) {
+                    case 'L': navigateFocus(View.FOCUS_LEFT);  return;
+                    case 'R': navigateFocus(View.FOCUS_RIGHT); return;
+                    case 'U': navigateFocus(View.FOCUS_UP);    return;
+                    case 'D': navigateFocus(View.FOCUS_DOWN);  return;
+                }
+                return; // "Y0X0" neutral or unknown — ignore
+            }
+
+            if (!intent.hasExtra("key_press")) return;
             int keyCode = intent.getIntExtra("key_press", 0);
             switch (keyCode) {
-                case DMD_KEY_LEFT:
-                    letterBar.focusPrev();
+                case KeyEvent.KEYCODE_DPAD_LEFT:   navigateFocus(View.FOCUS_LEFT);  break;
+                case KeyEvent.KEYCODE_DPAD_RIGHT:  navigateFocus(View.FOCUS_RIGHT); break;
+                case KeyEvent.KEYCODE_DPAD_UP:     navigateFocus(View.FOCUS_UP);    break;
+                case KeyEvent.KEYCODE_DPAD_DOWN:   navigateFocus(View.FOCUS_DOWN);  break;
+                case KeyEvent.KEYCODE_ENTER: {
+                    View focused = getCurrentFocus();
+                    if (focused != null) focused.performClick();
                     break;
-                case DMD_KEY_RIGHT:
-                    letterBar.focusNext();
-                    break;
-                case DMD_KEY_BUTTON1:
-                    letterBar.selectFocused();
-                    break;
-                case DMD_KEY_BUTTON2:
-                    letterBar.removeLastLetter();
-                    break;
-                case DMD_KEY_DOWN:
-                    AppModel first = letterBar.getFirstFilteredApp();
-                    if (first != null && first.launchIntent != null) {
-                        appHistoryStore.recordLaunch(first.packageName);
-                        startActivity(first.launchIntent);
-                    }
+                }
+                case KeyEvent.KEYCODE_ESCAPE:
+                    letterBar.clearAllLetters();
+                    letterBar.focusFirstButton();
                     break;
             }
         }
@@ -691,6 +690,13 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(packageReceiver, filter, Context.RECEIVER_EXPORTED);
     }
 
+    private void navigateFocus(int direction) {
+        View current = getCurrentFocus();
+        if (current == null) { letterBar.focusFirstButton(); return; }
+        View next = current.focusSearch(direction);
+        if (next != null && next != current) next.requestFocus();
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (letterBar == null || event.getAction() != KeyEvent.ACTION_DOWN) {
@@ -698,37 +704,30 @@ public class MainActivity extends AppCompatActivity {
         }
         int keyCode = event.getKeyCode();
 
-        // Drop keyboard-source events for keycodes the wired remote also emits.
-        // The remote enumerates as a USB-HID keyboard, so its presses arrive
-        // both via the DMD broadcast (handled by remoteListener) and as
-        // KeyEvents here. The broadcast is the single source of truth for
-        // remote behaviour, so suppress the duplicate KeyEvent.
-        if ((event.getSource() & InputDevice.SOURCE_KEYBOARD) == InputDevice.SOURCE_KEYBOARD
-                && (keyCode == DMD_KEY_LEFT
-                    || keyCode == DMD_KEY_RIGHT
-                    || keyCode == DMD_KEY_DOWN
-                    || keyCode == DMD_KEY_BUTTON1
-                    || keyCode == DMD_KEY_BUTTON2)) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:  navigateFocus(View.FOCUS_LEFT);  return true;
+            case KeyEvent.KEYCODE_DPAD_RIGHT: navigateFocus(View.FOCUS_RIGHT); return true;
+            case KeyEvent.KEYCODE_DPAD_UP:    navigateFocus(View.FOCUS_UP);    return true;
+            case KeyEvent.KEYCODE_DPAD_DOWN:  navigateFocus(View.FOCUS_DOWN);  return true;
+        }
+
+        if (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
+            View focused = getCurrentFocus();
+            if (focused != null) focused.performClick();
             return true;
         }
 
-        // Backspace → remove last selected letter
+        if (keyCode == KeyEvent.KEYCODE_ESCAPE) {
+            letterBar.clearAllLetters();
+            letterBar.focusFirstButton();
+            return true;
+        }
+
         if (keyCode == KeyEvent.KEYCODE_DEL) {
             letterBar.removeLastLetter();
             return true;
         }
 
-        // Enter → launch first app in the filtered result
-        if (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
-            AppModel first = letterBar.getFirstFilteredApp();
-            if (first != null && first.launchIntent != null) {
-                appHistoryStore.recordLaunch(first.packageName);
-                startActivity(first.launchIntent);
-            }
-            return true;
-        }
-
-        // Letter keys → select the matching letter on the bar if available
         int unicode = event.getUnicodeChar();
         if (unicode != 0 && Character.isLetter((char) unicode)) {
             letterBar.selectLetter((char) unicode);

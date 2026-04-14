@@ -40,7 +40,6 @@ public class LetterBar {
     private LetterSortStore letterSortStore;
     private MatchMethodStore matchMethodStore;
     private List<AppModel> lastFilteredApps;
-    private int focusedAvailableIndex = -1; // -1 = no focus; index into available (non-selected) letters
 
     // Folder mode state
     private String activeFolderId = null;
@@ -55,7 +54,6 @@ public class LetterBar {
     public void setApps(List<AppModel> apps) {
         this.allApps = apps;
         selectedLetters.clear();
-        focusedAvailableIndex = -1;
         activeFolderId = null;
         folderContents = null;
         updateButtons();
@@ -96,7 +94,6 @@ public class LetterBar {
         this.activeFolderId = folderId;
         this.folderContents = contents;
         selectedLetters.add(FOLDER_CHAR);
-        focusedAvailableIndex = -1;
         updateButtons();
     }
 
@@ -295,6 +292,16 @@ public class LetterBar {
                 // Persisting button — update appearance if needed
                 existing.setBackgroundResource(
                         spec.selected ? R.drawable.bg_button_selected : R.drawable.bg_button);
+                existing.setOnFocusChangeListener((v, hasFocus) -> {
+                    Button b = (Button) v;
+                    String t = (String) b.getTag();
+                    if (hasFocus) b.setBackgroundResource(R.drawable.bg_button_focused);
+                    else {
+                        boolean sel = t != null && t.startsWith("s:");
+                        b.setBackgroundResource(sel ? R.drawable.bg_button_selected : R.drawable.bg_button);
+                    }
+                });
+                if (existing.isFocused()) existing.setBackgroundResource(R.drawable.bg_button_focused);
 
                 // Ensure it's at the correct position
                 int currentPos = container.indexOfChild(existing);
@@ -314,20 +321,6 @@ public class LetterBar {
                     btn.setOnClickListener(v -> onAvailableLetterClick(letter));
                 }
                 container.addView(btn, Math.min(i, container.getChildCount()));
-            }
-        }
-
-        // Apply focused background to the focused available letter button
-        int availableCount = 0;
-        for (int i = 0; i < container.getChildCount(); i++) {
-            Button btn = (Button) container.getChildAt(i);
-            String tag = (String) btn.getTag();
-            if (tag != null && tag.startsWith("a:") && !tag.equals("a:" + GEAR_CHAR) && !tag.equals("a:" + FOLDER_CHAR)) {
-                boolean isFocused = (availableCount == focusedAvailableIndex);
-                if (isFocused) {
-                    btn.setBackgroundResource(R.drawable.bg_button_focused);
-                }
-                availableCount++;
             }
         }
 
@@ -353,64 +346,7 @@ public class LetterBar {
         if (removed == FOLDER_CHAR) {
             clearFolderState();
         }
-        focusedAvailableIndex = -1;
         updateButtons();
-        return true;
-    }
-
-    /** Returns the available (non-selected, non-gear, non-folder) letters from the current button list. */
-    private List<Character> getAvailableLetters() {
-        List<Character> result = new ArrayList<>();
-        for (ButtonSpec spec : computeTargetButtons()) {
-            if (!spec.selected && spec.letter != GEAR_CHAR && spec.letter != FOLDER_CHAR) {
-                result.add(spec.letter);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Moves remote focus to the next available letter (wraps around).
-     * Returns true if there were any available letters to focus.
-     */
-    public boolean focusNext() {
-        List<Character> available = getAvailableLetters();
-        if (available.isEmpty()) return false;
-        if (focusedAvailableIndex < 0 || focusedAvailableIndex >= available.size() - 1) {
-            focusedAvailableIndex = 0;
-        } else {
-            focusedAvailableIndex++;
-        }
-        updateButtons();
-        return true;
-    }
-
-    /**
-     * Moves remote focus to the previous available letter (wraps around).
-     * Returns true if there were any available letters to focus.
-     */
-    public boolean focusPrev() {
-        List<Character> available = getAvailableLetters();
-        if (available.isEmpty()) return false;
-        if (focusedAvailableIndex <= 0) {
-            focusedAvailableIndex = available.size() - 1;
-        } else {
-            focusedAvailableIndex--;
-        }
-        updateButtons();
-        return true;
-    }
-
-    /**
-     * Selects the currently focused available letter.
-     * Returns true if a letter was focused and selected.
-     */
-    public boolean selectFocused() {
-        List<Character> available = getAvailableLetters();
-        if (focusedAvailableIndex < 0 || focusedAvailableIndex >= available.size()) return false;
-        char letter = available.get(focusedAvailableIndex);
-        focusedAvailableIndex = -1;
-        onAvailableLetterClick(letter);
         return true;
     }
 
@@ -488,7 +424,29 @@ public class LetterBar {
         btn.setLayoutParams(params);
 
         btn.setBackgroundResource(selected ? R.drawable.bg_button_selected : R.drawable.bg_button);
+        btn.setOnFocusChangeListener((v, hasFocus) -> {
+            Button b = (Button) v;
+            String t = (String) b.getTag();
+            if (hasFocus) {
+                b.setBackgroundResource(R.drawable.bg_button_focused);
+            } else {
+                boolean sel = t != null && t.startsWith("s:");
+                b.setBackgroundResource(sel ? R.drawable.bg_button_selected : R.drawable.bg_button);
+            }
+        });
 
         return btn;
+    }
+
+    public void clearAllLetters() {
+        selectedLetters.clear();
+        clearFolderState();
+        updateButtons();
+    }
+
+    public void focusFirstButton() {
+        if (container.getChildCount() > 0) {
+            container.getChildAt(0).requestFocus();
+        }
     }
 }
