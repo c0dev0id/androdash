@@ -23,6 +23,9 @@ Replaced the custom `focusedAvailableIndex` integer tracking in `LetterBar` with
 
 **Joy string format**: andRemote2 sends strings like `"L5"`, `"U3R4"` — direction char + magnitude (2–5). We match on `charAt(0)` so any magnitude triggers navigation. Events are only sent on position change, so no repeat flooding.
 
+### Stale `focusedAvailableIndex` Reference Fixed (2026-04-14)
+The `clearSelection()` method in `LetterBar` still contained `focusedAvailableIndex = -1` after the native focus traversal refactor removed the field. This caused a compile error in CI. When removing fields during a refactor, search for all write sites (reset/clear assignments), not just read sites — IDEs often miss stale writes.
+
 ### andRemote2 Joystick Support (2026-04-14)
 The 360° joystick in andRemote2 sends `joy` extras via the same broadcast action. Previously ignored entirely. Now handled by `remoteListener` alongside `key_press` button events.
 
