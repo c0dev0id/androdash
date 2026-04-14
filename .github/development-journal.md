@@ -18,10 +18,10 @@ Replaced the custom `focusedAvailableIndex` integer tracking in `LetterBar` with
 **How it works**: `Button` objects in `LetterBar` are focusable by default; `LinearLayout` items in the RecyclerView are made focusable via `setFocusable(true)` in `onCreateViewHolder`. `OnFocusChangeListener` on each view swaps the background drawable (`bg_button_focused` / `bg_app_card_focused`) on focus gain/loss. The `navigateFocus(direction)` helper in `MainActivity` calls `getCurrentFocus().focusSearch(direction).requestFocus()`.
 
 **Input paths**:
-- Remote (`com.thorkracing.wireddevices.keypress` broadcast): joystick `joy` string (any direction prefix + any magnitude) and `key_press` keycodes both route to `navigateFocus()` / `performClick()` / `clearAllLetters()`.
-- Physical keyboard (`dispatchKeyEvent`): arrow keys → `navigateFocus()`, Enter → `performClick()`, Escape → `clearAllLetters()` + `focusFirstButton()`, Backspace → `removeLastLetter()`, letter keys → `selectLetter()`.
+- Remote (`com.thorkracing.wireddevices.keypress` broadcast): joystick `joy` string exact-matched on `U5`/`D5`/`L5`/`R5` only; `key_press` keycodes for Enter/Escape route to `performClick()` / `clearAllLetters()`.
+- Physical keyboard (`dispatchKeyEvent`): Enter → `performClick()`, Escape → `clearAllLetters()` + `focusFirstButton()`, Backspace → `removeLastLetter()`, letter keys → `selectLetter()`. D-pad keys are NOT handled here — broadcast-only.
 
-**Joy string format**: andRemote2 sends strings like `"L5"`, `"U3R4"` — direction char + magnitude (2–5). We match on `charAt(0)` so any magnitude triggers navigation. Events are only sent on position change, so no repeat flooding.
+**Joy string format**: andRemote2 sends strings like `"L5"`, `"U3R4"` — direction char(s) + magnitude (2–5). We only react to the four exact max-displacement cardinal strings (`U5`, `D5`, `L5`, `R5`). Diagonals and sub-max magnitudes are intentionally ignored to avoid accidental navigation from imprecise input.
 
 ### Stale `focusedAvailableIndex` Reference Fixed (2026-04-14)
 The `clearSelection()` method in `LetterBar` still contained `focusedAvailableIndex = -1` after the native focus traversal refactor removed the field. This caused a compile error in CI. When removing fields during a refactor, search for all write sites (reset/clear assignments), not just read sites — IDEs often miss stale writes.

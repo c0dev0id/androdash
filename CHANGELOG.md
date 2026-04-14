@@ -15,3 +15,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - HiddenAppsStore now writes both hidden and history-excluded sets in a single atomic SharedPreferences transaction (was two separate disk writes per mutation).
 - Remote input handling replaced: the custom letter-bar focus index system is removed in favour of Android's native view focus traversal, enabling fluid navigation between all interactive UI elements.
+- Joystick navigation now only reacts to full-displacement cardinal joy strings (`U5`, `D5`, `L5`, `R5`); lower magnitudes and diagonals are ignored to prevent accidental input.
+- D-pad key handling removed from `dispatchKeyEvent`; joystick navigation is broadcast-only.
