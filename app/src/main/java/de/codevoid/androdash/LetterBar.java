@@ -376,7 +376,6 @@ public class LetterBar {
 
     public void clearSelection() {
         selectedLetters.clear();
-        focusedAvailableIndex = -1;
         clearFolderState();
         updateButtons();
     }
