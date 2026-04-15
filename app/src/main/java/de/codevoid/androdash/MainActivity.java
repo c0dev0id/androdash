@@ -736,10 +736,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void navigateFocus(int direction) {
-        View current = getCurrentFocus();
-        if (current == null) { letterBar.focusFirstButton(); return; }
-        View next = current.focusSearch(direction);
-        if (next != null && next != current) next.requestFocus();
+        if (getCurrentFocus() == null) { letterBar.focusFirstButton(); return; }
+        int keyCode;
+        switch (direction) {
+            case View.FOCUS_LEFT:  keyCode = KeyEvent.KEYCODE_DPAD_LEFT;  break;
+            case View.FOCUS_RIGHT: keyCode = KeyEvent.KEYCODE_DPAD_RIGHT; break;
+            case View.FOCUS_UP:    keyCode = KeyEvent.KEYCODE_DPAD_UP;    break;
+            case View.FOCUS_DOWN:  keyCode = KeyEvent.KEYCODE_DPAD_DOWN;  break;
+            default: return;
+        }
+        dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
     }
 
     @Override

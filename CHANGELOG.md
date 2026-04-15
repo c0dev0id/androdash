@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Full d-pad / arrow-key navigation: directional input moves Android native focus across both the letter bar and the app grid. Enter activates the focused element, Escape clears all letter selections.
 
 ### Fixed
+- Remote navigation focus loss: directional input from remotes and joysticks now routes through the same synthetic KeyEvent dispatch path as physical keyboard DPAD, so `HorizontalScrollView` scopes focus search to its own children and always finds the next letter button instead of returning the scroll container itself.
 - Remote focus disappearing when pressing ENTER on a letter button: a deferred focus fallback now restores focus to the first available button after any action that removes the focused view from the tree.
 - Joystick input causing RecyclerView to scroll and lose focus: `onGenericMotionEvent` now consumes `SOURCE_JOYSTICK` events at the Activity level, so RecyclerView's built-in joystick-scroll handler can no longer recycle the focused item off-screen.
 - Joystick `joyHeld` latch never resetting when a remote releases only one axis at a time: the neutral sentinel check now recognises `"Y0"` and `"X0"` in addition to `"Y0X0"`, matching the actual hardware behaviour.
