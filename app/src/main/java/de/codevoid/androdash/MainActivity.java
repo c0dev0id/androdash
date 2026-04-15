@@ -11,7 +11,9 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -161,6 +163,11 @@ public class MainActivity extends AppCompatActivity {
                     letterBar.focusFirstButton();
                     break;
             }
+            // Some actions (e.g. ENTER on a letter button) remove the focused view.
+            // Defer the check so it runs after updateButtons() completes.
+            rootLayout.post(() -> {
+                if (getCurrentFocus() == null) letterBar.focusFirstButton();
+            });
         }
     };
 
@@ -730,6 +737,18 @@ public class MainActivity extends AppCompatActivity {
         if (current == null) { letterBar.focusFirstButton(); return; }
         View next = current.focusSearch(direction);
         if (next != null && next != current) next.requestFocus();
+    }
+
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        // Navigation is handled entirely by the wireddevices broadcast receiver.
+        // Consuming SOURCE_JOYSTICK here prevents RecyclerView from scrolling the
+        // app grid via its built-in joystick-scroll handler, which would recycle
+        // the focused item off-screen and lose focus.
+        if ((event.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+            return true;
+        }
+        return super.onGenericMotionEvent(event);
     }
 
     @Override
