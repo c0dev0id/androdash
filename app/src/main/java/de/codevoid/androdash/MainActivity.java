@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.FocusFinder;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -58,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView appGrid;
     private AppGridAdapter adapter;
     private LetterBar letterBar;
+    private ViewGroup letterScrollView;
     private List<AppModel> allApps;
     private HiddenAppsStore hiddenAppsStore;
     private LetterSortStore letterSortStore;
@@ -482,6 +484,7 @@ public class MainActivity extends AppCompatActivity {
         setupGridLayout();
 
         // Initialize LetterBar
+        letterScrollView = scrollView;
         letterBar = new LetterBar(this, letterContainer, scrollView);
         letterBar.setLetterSortStore(letterSortStore);
         letterBar.setMatchMethodStore(matchMethodStore);
@@ -736,16 +739,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void navigateFocus(int direction) {
-        if (getCurrentFocus() == null) { letterBar.focusFirstButton(); return; }
-        int keyCode;
-        switch (direction) {
-            case View.FOCUS_LEFT:  keyCode = KeyEvent.KEYCODE_DPAD_LEFT;  break;
-            case View.FOCUS_RIGHT: keyCode = KeyEvent.KEYCODE_DPAD_RIGHT; break;
-            case View.FOCUS_UP:    keyCode = KeyEvent.KEYCODE_DPAD_UP;    break;
-            case View.FOCUS_DOWN:  keyCode = KeyEvent.KEYCODE_DPAD_DOWN;  break;
-            default: return;
+        View current = getCurrentFocus();
+        if (current == null) { letterBar.focusFirstButton(); return; }
+
+        // Search within the letter bar's scroll container first. This scopes
+        // FocusFinder to the bar's children and prevents the scroll container
+        // itself from being selected (which has no visible focus indicator).
+        View next = null;
+        if (letterScrollView != null) {
+            next = FocusFinder.getInstance().findNextFocus(
+                    letterScrollView, current, direction);
         }
-        dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+
+        // Fall back to window-wide search for cross-boundary moves (e.g. bar ↔ app grid).
+        if (next == null) {
+            next = current.focusSearch(direction);
+        }
+
+        // Guard: if focusSearch returned the scroll container itself, ignore it.
+        if (next == letterScrollView) return;
+
+        if (next != null && next != current) {
+            // requestFocusFromTouch exits touch mode before requesting focus.
+            // Remote input never goes through ViewRootImpl so touch mode is
+            // never exited automatically; requestFocus() would silently fail.
+            next.requestFocusFromTouch();
+        }
     }
 
     @Override
