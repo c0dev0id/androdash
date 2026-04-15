@@ -114,12 +114,12 @@ public class MainActivity extends AppCompatActivity {
                 // sequence of <axis><magnitude> pairs where axis ∈ {U,D,L,R}
                 // and magnitude ∈ {2..5}; "Y0X0" is the neutral sentinel sent
                 // once on release. We treat the joystick as a digital key:
-                //   - "Y0X0"          → key-up: re-arm the latch, do nothing.
+                //   - "Y0X0" / "Y0" / "X0" → key-up: re-arm the latch, do nothing.
                 //   - dominant axis
                 //     at magnitude 5  → key-down: navigate once, hold latch.
                 //   - anything else   → ignore (sub-threshold or drift while
                 //                        already held).
-                if ("Y0X0".equals(joy)) {
+                if ("Y0X0".equals(joy) || "Y0".equals(joy) || "X0".equals(joy)) {
                     joyHeld = false;
                     return;
                 }
