@@ -25,6 +25,16 @@ Replaced the custom `focusedAvailableIndex` integer tracking in `LetterBar` with
 
 **Keydown/keyup model**: we treat the joystick as a digital key via a `joyHeld` boolean latch. A payload whose dominant axis has magnitude 5 is a key-down: navigate once in that direction, set `joyHeld = true`. `"Y0X0"` is a key-up: clear `joyHeld`. Anything else (sub-5 magnitude payloads, drift payloads received while `joyHeld`) is ignored. Net effect: one physical push = one focus move, even under drift.
 
+### Remote Focus Disappearing Fixed (2026-04-15)
+
+Two independent root causes, both fixed in `MainActivity`:
+
+**Root Cause A — RecyclerView joystick scroll**: Android TV recognises the physical remote hardware as a `SOURCE_JOYSTICK` device and dispatches `GenericMotionEvent` to `RecyclerView`, which has built-in joystick-scroll handling (`scrollByInternal`). This recycled the focused item off-screen independently of the broadcast receiver. Fix: override `onGenericMotionEvent` to consume all `SOURCE_JOYSTICK` events at Activity level. Navigation is broadcast-only; native joystick motion is noise.
+
+**Root Cause B — ENTER removes focused view**: Pressing ENTER on a letter button calls `performClick()` → `onAvailableLetterClick()` → `updateButtons()`, which removes the focused view (tag `a:X`) and adds a selected view (tag `s:0:X`) in its place. Android clears window focus when the focused view is removed. Fix: `rootLayout.post(() -> { if (getCurrentFocus() == null) letterBar.focusFirstButton(); })` at the end of `onReceive()`. The `post()` defers the check until after `updateButtons()` runs on the same main-thread `MessageQueue`.
+
+**Lesson**: when view mutations and focus checks need ordering guarantees on the main thread, `View.post()` is the correct tool — it enqueues after all pending layout/draw work without introducing inter-thread complexity.
+
 ### Stale `focusedAvailableIndex` Reference Fixed (2026-04-14)
 The `clearSelection()` method in `LetterBar` still contained `focusedAvailableIndex = -1` after the native focus traversal refactor removed the field. This caused a compile error in CI. When removing fields during a refactor, search for all write sites (reset/clear assignments), not just read sites — IDEs often miss stale writes.
 
