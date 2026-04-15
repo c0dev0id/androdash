@@ -138,33 +138,36 @@ public class MainActivity extends AppCompatActivity {
                 if (dominantMagnitude < 5) return;
                 joyHeld = true;
                 switch (dominantAxis) {
-                    case 'U': navigateFocus(View.FOCUS_UP);    return;
-                    case 'D': navigateFocus(View.FOCUS_DOWN);  return;
-                    case 'L': navigateFocus(View.FOCUS_LEFT);  return;
-                    case 'R': navigateFocus(View.FOCUS_RIGHT); return;
+                    case 'U': navigateFocus(View.FOCUS_UP);    break;
+                    case 'D': navigateFocus(View.FOCUS_DOWN);  break;
+                    case 'L': navigateFocus(View.FOCUS_LEFT);  break;
+                    case 'R': navigateFocus(View.FOCUS_RIGHT); break;
+                    default: return;  // unknown axis — no action, no fallback
                 }
-                return;
-            }
-
-            if (!intent.hasExtra("key_press")) return;
-            int keyCode = intent.getIntExtra("key_press", 0);
-            switch (keyCode) {
-                case KeyEvent.KEYCODE_DPAD_LEFT:   navigateFocus(View.FOCUS_LEFT);  break;
-                case KeyEvent.KEYCODE_DPAD_RIGHT:  navigateFocus(View.FOCUS_RIGHT); break;
-                case KeyEvent.KEYCODE_DPAD_UP:     navigateFocus(View.FOCUS_UP);    break;
-                case KeyEvent.KEYCODE_DPAD_DOWN:   navigateFocus(View.FOCUS_DOWN);  break;
-                case KeyEvent.KEYCODE_ENTER: {
-                    View focused = getCurrentFocus();
-                    if (focused != null) focused.performClick();
-                    break;
+                // falls through to post() below
+            } else {
+                if (!intent.hasExtra("key_press")) return;
+                int keyCode = intent.getIntExtra("key_press", 0);
+                switch (keyCode) {
+                    case KeyEvent.KEYCODE_DPAD_LEFT:   navigateFocus(View.FOCUS_LEFT);  break;
+                    case KeyEvent.KEYCODE_DPAD_RIGHT:  navigateFocus(View.FOCUS_RIGHT); break;
+                    case KeyEvent.KEYCODE_DPAD_UP:     navigateFocus(View.FOCUS_UP);    break;
+                    case KeyEvent.KEYCODE_DPAD_DOWN:   navigateFocus(View.FOCUS_DOWN);  break;
+                    case KeyEvent.KEYCODE_ENTER: {
+                        View focused = getCurrentFocus();
+                        if (focused != null) focused.performClick();
+                        break;
+                    }
+                    case KeyEvent.KEYCODE_ESCAPE:
+                        letterBar.clearAllLetters();
+                        letterBar.focusFirstButton();
+                        break;
                 }
-                case KeyEvent.KEYCODE_ESCAPE:
-                    letterBar.clearAllLetters();
-                    letterBar.focusFirstButton();
-                    break;
+                // falls through to post() below
             }
-            // Some actions (e.g. ENTER on a letter button) remove the focused view.
-            // Defer the check so it runs after updateButtons() completes.
+            // Shared focus fallback — runs after joy navigation and key_press handling.
+            // Some actions (e.g. ENTER on a letter button) remove the focused view;
+            // defer the check so it runs after updateButtons() completes.
             rootLayout.post(() -> {
                 if (getCurrentFocus() == null) letterBar.focusFirstButton();
             });
@@ -745,7 +748,7 @@ public class MainActivity extends AppCompatActivity {
         // Consuming SOURCE_JOYSTICK here prevents RecyclerView from scrolling the
         // app grid via its built-in joystick-scroll handler, which would recycle
         // the focused item off-screen and lose focus.
-        if ((event.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+        if (event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) {
             return true;
         }
         return super.onGenericMotionEvent(event);
