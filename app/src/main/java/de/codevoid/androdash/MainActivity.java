@@ -100,11 +100,26 @@ public class MainActivity extends AppCompatActivity {
 
             String joy = intent.getStringExtra("joy");
             if (joy != null) {
-                switch (joy) {
-                    case "U5": navigateFocus(View.FOCUS_UP);    return;
-                    case "D5": navigateFocus(View.FOCUS_DOWN);  return;
-                    case "L5": navigateFocus(View.FOCUS_LEFT);  return;
-                    case "R5": navigateFocus(View.FOCUS_RIGHT); return;
+                // Joy payloads are a concatenation of <axis><magnitude> pairs
+                // (e.g. "U5", "U5L4"). Pick the axis with the largest magnitude
+                // and only react at full deflection (magnitude 5).
+                char dominantAxis = 0;
+                int dominantMagnitude = 0;
+                for (int i = 0; i + 1 < joy.length(); i += 2) {
+                    char magChar = joy.charAt(i + 1);
+                    if (magChar < '0' || magChar > '9') return;
+                    int magnitude = magChar - '0';
+                    if (magnitude > dominantMagnitude) {
+                        dominantMagnitude = magnitude;
+                        dominantAxis = joy.charAt(i);
+                    }
+                }
+                if (dominantMagnitude < 5) return;
+                switch (dominantAxis) {
+                    case 'U': navigateFocus(View.FOCUS_UP);    return;
+                    case 'D': navigateFocus(View.FOCUS_DOWN);  return;
+                    case 'L': navigateFocus(View.FOCUS_LEFT);  return;
+                    case 'R': navigateFocus(View.FOCUS_RIGHT); return;
                 }
                 return;
             }
