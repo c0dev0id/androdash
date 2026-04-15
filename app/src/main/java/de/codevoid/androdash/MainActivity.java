@@ -92,6 +92,14 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String DMD_ACTION = "com.thorkracing.wireddevices.keypress";
 
+    // Keydown/keyup latch for the joystick. A full-deflection payload
+    // (magnitude 5 on the dominant axis) is treated as a key-down event and
+    // triggers exactly one navigation step; "Y0X0" (the neutral sentinel per
+    // andRemote2 SPECIFICATION.md §"Signal 1") is the key-up event that
+    // re-arms the latch. Any payload received while held is ignored — so
+    // natural finger drift at full deflection can't produce repeated moves.
+    private boolean joyHeld = false;
+
     private final BroadcastReceiver remoteListener = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -100,9 +108,20 @@ public class MainActivity extends AppCompatActivity {
 
             String joy = intent.getStringExtra("joy");
             if (joy != null) {
-                // Joy payloads are a concatenation of <axis><magnitude> pairs
-                // (e.g. "U5", "U5L4"). Pick the axis with the largest magnitude
-                // and only react at full deflection (magnitude 5).
+                // Per andRemote2 SPECIFICATION.md §"Signal 1": joy is a
+                // sequence of <axis><magnitude> pairs where axis ∈ {U,D,L,R}
+                // and magnitude ∈ {2..5}; "Y0X0" is the neutral sentinel sent
+                // once on release. We treat the joystick as a digital key:
+                //   - "Y0X0"          → key-up: re-arm the latch, do nothing.
+                //   - dominant axis
+                //     at magnitude 5  → key-down: navigate once, hold latch.
+                //   - anything else   → ignore (sub-threshold or drift while
+                //                        already held).
+                if ("Y0X0".equals(joy)) {
+                    joyHeld = false;
+                    return;
+                }
+                if (joyHeld) return;
                 char dominantAxis = 0;
                 int dominantMagnitude = 0;
                 for (int i = 0; i + 1 < joy.length(); i += 2) {
@@ -115,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 if (dominantMagnitude < 5) return;
+                joyHeld = true;
                 switch (dominantAxis) {
                     case 'U': navigateFocus(View.FOCUS_UP);    return;
                     case 'D': navigateFocus(View.FOCUS_DOWN);  return;

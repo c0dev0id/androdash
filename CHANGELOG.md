@@ -15,5 +15,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - HiddenAppsStore now writes both hidden and history-excluded sets in a single atomic SharedPreferences transaction (was two separate disk writes per mutation).
 - Remote input handling replaced: the custom letter-bar focus index system is removed in favour of Android's native view focus traversal, enabling fluid navigation between all interactive UI elements.
-- Joystick navigation now parses composite joy payloads (e.g. `U5L4`) by picking the axis with the largest magnitude; navigation only fires at full deflection (magnitude 5), so lower magnitudes and diagonals without a dominant full-deflection axis are ignored to prevent accidental input.
+- Joystick navigation now parses composite joy payloads (e.g. `U5L4`) by picking the axis with the largest magnitude and treats the joystick as a digital key: a magnitude-5 payload is a key-down that fires exactly one navigation step; the neutral sentinel `Y0X0` is a key-up that re-arms the latch. Intermediate payloads (sub-5 magnitudes or drift while held) are ignored, so one physical push = one focus move.
 - D-pad key handling removed from `dispatchKeyEvent`; joystick navigation is broadcast-only.
