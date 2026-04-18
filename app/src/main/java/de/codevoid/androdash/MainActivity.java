@@ -17,6 +17,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
@@ -187,6 +188,23 @@ public class MainActivity extends AppCompatActivity {
         folderStore = new FolderStore(this);
 
         rootLayout = findViewById(R.id.rootLayout);
+
+        // Restore focus when touch-mode entry clears it (e.g. touching a remote overlay).
+        // onGlobalFocusChanged fires with newFocus==null when focus is lost without an
+        // explicit navigation target. If the old view is still attached it was cleared by
+        // touch mode, not by a layout change — requestFocusFromTouch exits touch mode and
+        // returns it. The ENTER case (button removed from tree) is excluded because
+        // oldFocus.isAttachedToWindow() is false after removeViewAt().
+        rootLayout.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+            if (newFocus == null && oldFocus != null && oldFocus.isAttachedToWindow()) {
+                rootLayout.post(() -> {
+                    if (getCurrentFocus() == null && oldFocus.isAttachedToWindow()) {
+                        oldFocus.requestFocusFromTouch();
+                    }
+                });
+            }
+        });
+
         int baseSpacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
