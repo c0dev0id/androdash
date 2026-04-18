@@ -739,16 +739,19 @@ public class MainActivity extends AppCompatActivity {
         View current = getCurrentFocus();
         if (current == null) { letterBar.focusFirstButton(); return; }
 
-        // Search within the letter bar's scroll container first. This scopes
-        // FocusFinder to the bar's children and prevents the scroll container
-        // itself from being selected (which has no visible focus indicator).
+        // If focus is inside the letter bar, use a scoped FocusFinder search.
+        // This prevents the scroll container itself from being selected (it has
+        // no visible focus indicator). Only do this when current IS a descendant
+        // of letterScrollView — FocusFinder crashes if the focused view is not
+        // a descendant of the search root (offsetDescendantRectToMyCoords throws).
         View next = null;
-        if (letterScrollView != null) {
+        if (letterScrollView != null && isDescendantOf(current, letterScrollView)) {
             next = FocusFinder.getInstance().findNextFocus(
                     letterScrollView, current, direction);
         }
 
-        // Fall back to window-wide search for cross-boundary moves (e.g. bar ↔ app grid).
+        // Fall back to window-wide search (cross-boundary: bar ↔ app grid,
+        // or any navigation while focus is in the app grid).
         if (next == null) {
             next = current.focusSearch(direction);
         }
@@ -762,6 +765,15 @@ public class MainActivity extends AppCompatActivity {
             // never exited automatically; requestFocus() would silently fail.
             next.requestFocusFromTouch();
         }
+    }
+
+    private static boolean isDescendantOf(View view, ViewGroup ancestor) {
+        ViewParent parent = view.getParent();
+        while (parent != null) {
+            if (parent == ancestor) return true;
+            parent = parent.getParent();
+        }
+        return false;
     }
 
     @Override
