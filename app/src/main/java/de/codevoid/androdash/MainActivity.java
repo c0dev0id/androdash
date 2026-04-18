@@ -144,9 +144,8 @@ public class MainActivity extends AppCompatActivity {
                     case 'D': navigateFocus(View.FOCUS_DOWN);  break;
                     case 'L': navigateFocus(View.FOCUS_LEFT);  break;
                     case 'R': navigateFocus(View.FOCUS_RIGHT); break;
-                    default: return;  // unknown axis — no action, no fallback
+                    default: return;
                 }
-                // falls through to post() below
             } else {
                 if (!intent.hasExtra("key_press")) return;
                 int keyCode = intent.getIntExtra("key_press", 0);
@@ -158,6 +157,11 @@ public class MainActivity extends AppCompatActivity {
                     case KeyEvent.KEYCODE_ENTER: {
                         View focused = getCurrentFocus();
                         if (focused != null) focused.performClick();
+                        // performClick → updateButtons() removes the focused view from the
+                        // tree; defer focus restoration until after the layout pass.
+                        rootLayout.post(() -> {
+                            if (getCurrentFocus() == null) letterBar.focusFirstButton();
+                        });
                         break;
                     }
                     case KeyEvent.KEYCODE_ESCAPE:
@@ -165,14 +169,7 @@ public class MainActivity extends AppCompatActivity {
                         letterBar.focusFirstButton();
                         break;
                 }
-                // falls through to post() below
             }
-            // Shared focus fallback — runs after joy navigation and key_press handling.
-            // Some actions (e.g. ENTER on a letter button) remove the focused view;
-            // defer the check so it runs after updateButtons() completes.
-            rootLayout.post(() -> {
-                if (getCurrentFocus() == null) letterBar.focusFirstButton();
-            });
         }
     };
 
