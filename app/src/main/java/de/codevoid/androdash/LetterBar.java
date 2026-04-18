@@ -409,6 +409,9 @@ public class LetterBar {
         btn.setTypeface(btn.getTypeface(), Typeface.BOLD);
         btn.setGravity(Gravity.CENTER);
         btn.setStateListAnimator(null); // Remove default elevation animation
+        // Retain focus when the device enters touch mode (e.g. remote overlay touch).
+        // Without this, any touchscreen contact clears focus from the button.
+        btn.setFocusableInTouchMode(true);
         btn.setMinWidth(0);
         btn.setMinHeight(0);
         btn.setMinimumWidth(0);
