@@ -764,7 +764,7 @@ public class MainActivity extends AppCompatActivity {
         // of letterScrollView — FocusFinder crashes if the focused view is not
         // a descendant of the search root (offsetDescendantRectToMyCoords throws).
         View next = null;
-        if (letterScrollView != null && isDescendantOf(current, letterScrollView)) {
+        if (isDescendantOf(current, letterScrollView)) {
             next = FocusFinder.getInstance().findNextFocus(
                     letterScrollView, current, direction);
         }

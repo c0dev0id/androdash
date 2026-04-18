@@ -445,8 +445,8 @@ public class LetterBar {
 
     public void focusFirstButton() {
         if (container.getChildCount() > 0) {
-            // requestFocusFromTouch exits touch mode before granting focus;
-            // remote input never exits touch mode via ViewRootImpl automatically.
+            // Remote input never exits touch mode via ViewRootImpl; use
+            // requestFocusFromTouch so it exits touch mode before focusing.
             container.getChildAt(0).requestFocusFromTouch();
         }
     }
