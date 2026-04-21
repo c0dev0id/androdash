@@ -98,18 +98,34 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (letterBar == null) return;
-            if (!intent.hasExtra("key_press")) return;
-            if (intent.getIntExtra("repeat", 0) != 0) return;
 
-            int keyCode = intent.getIntExtra("key_press", 0);
-            if (keyCode == DMD_KEY_BUTTON1) {
-                View focused = getCurrentFocus();
-                if (focused != null) focused.performClick();
-            } else if (keyCode == DMD_KEY_BUTTON2) {
-                letterBar.clearSelection();
+            if (intent.hasExtra("key_press") && intent.getIntExtra("repeat", 0) == 0) {
+                int keyCode = intent.getIntExtra("key_press", 0);
+                if (keyCode == DMD_KEY_BUTTON1) {
+                    View focused = getCurrentFocus();
+                    if (focused != null) focused.performClick();
+                } else if (keyCode == DMD_KEY_BUTTON2) {
+                    letterBar.clearSelection();
+                }
+            }
+
+            String joy = intent.getStringExtra("joy");
+            if (joy != null) {
+                if (joy.startsWith("U5")) moveFocus(View.FOCUS_UP);
+                if (joy.startsWith("D5")) moveFocus(View.FOCUS_DOWN);
+                if (joy.endsWith("L5"))   moveFocus(View.FOCUS_LEFT);
+                if (joy.endsWith("R5"))   moveFocus(View.FOCUS_RIGHT);
             }
         }
     };
+
+    private void moveFocus(int direction) {
+        View focused = getCurrentFocus();
+        View next = focused != null
+                ? focused.focusSearch(direction)
+                : rootLayout.focusSearch(direction);
+        if (next != null) next.requestFocus(direction);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
