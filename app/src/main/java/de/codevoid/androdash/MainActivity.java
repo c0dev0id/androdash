@@ -111,10 +111,14 @@ public class MainActivity extends AppCompatActivity {
 
             String joy = intent.getStringExtra("joy");
             if (joy != null) {
-                if (joy.startsWith("U5")) moveFocus(View.FOCUS_UP);
-                if (joy.startsWith("D5")) moveFocus(View.FOCUS_DOWN);
-                if (joy.endsWith("L5"))   moveFocus(View.FOCUS_LEFT);
-                if (joy.endsWith("R5"))   moveFocus(View.FOCUS_RIGHT);
+                boolean vertical   = joy.startsWith("U5") || joy.startsWith("D5");
+                boolean horizontal = joy.endsWith("L5")   || joy.endsWith("R5");
+                if (!(vertical && horizontal)) {
+                    if (joy.startsWith("U5")) moveFocus(View.FOCUS_UP);
+                    if (joy.startsWith("D5")) moveFocus(View.FOCUS_DOWN);
+                    if (joy.endsWith("L5"))   moveFocus(View.FOCUS_LEFT);
+                    if (joy.endsWith("R5"))   moveFocus(View.FOCUS_RIGHT);
+                }
             }
         }
     };
