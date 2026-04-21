@@ -16,9 +16,12 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Process;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.view.ViewConfiguration;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -57,13 +60,39 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private static final int VIEW_TYPE_CONFIG = 1;
     private static final int VIEW_TYPE_HISTORY = 2;
 
-    static final View.OnTouchListener FOCUS_ON_TOUCH = (v, event) -> {
-        switch (event.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN: v.requestFocus(); return true;
-            case MotionEvent.ACTION_UP:   v.performClick(); return true;
-            case MotionEvent.ACTION_CANCEL: return true;
+    static final View.OnTouchListener FOCUS_ON_TOUCH = new View.OnTouchListener() {
+        private final Handler handler = new Handler(Looper.getMainLooper());
+        private View target = null;
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    v.requestFocus();
+                    target = v;
+                    handler.postDelayed(() -> {
+                        if (target == v) {
+                            target = null;
+                            v.performLongClick();
+                        }
+                    }, ViewConfiguration.getLongPressTimeout());
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    if (target != null) {
+                        handler.removeCallbacksAndMessages(null);
+                        target = null;
+                        v.performClick();
+                    }
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    if (target != null) {
+                        handler.removeCallbacksAndMessages(null);
+                        target = null;
+                    }
+                    return true;
+            }
+            return false;
         }
-        return false;
     };
 
     public interface OnConfigToggleListener {
