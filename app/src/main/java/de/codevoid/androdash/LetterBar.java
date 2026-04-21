@@ -250,6 +250,18 @@ public class LetterBar {
     }
 
     private void updateButtons() {
+        // Save the focused button's tag so we can restore focus after the rebuild.
+        // When a letter transitions available→selected its tag changes from "a:X" to "s:N:X",
+        // and vice-versa; we remap accordingly.
+        String focusedTag = null;
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            if (child.isFocused()) {
+                focusedTag = (String) child.getTag();
+                break;
+            }
+        }
+
         List<ButtonSpec> target = computeTargetButtons();
 
         if (container.getChildCount() > 0) {
@@ -329,6 +341,36 @@ public class LetterBar {
                     btn.setBackgroundResource(R.drawable.bg_button_focused);
                 }
                 availableCount++;
+            }
+        }
+
+        // Restore focus to the equivalent button after the rebuild
+        if (focusedTag != null) {
+            Set<String> newTags = new HashSet<>();
+            for (ButtonSpec spec : target) newTags.add(spec.tag);
+
+            String restoreTag = focusedTag;
+            if (!newTags.contains(focusedTag)) {
+                if (focusedTag.startsWith("a:") && focusedTag.length() == 3) {
+                    // Available letter was just selected → find its new selected tag
+                    char letter = focusedTag.charAt(2);
+                    for (ButtonSpec spec : target) {
+                        if (spec.selected && spec.letter == letter) {
+                            restoreTag = spec.tag;
+                            break;
+                        }
+                    }
+                } else if (focusedTag.startsWith("s:")) {
+                    // Selected letter was removed → find its new available tag
+                    restoreTag = "a:" + focusedTag.charAt(focusedTag.length() - 1);
+                }
+            }
+            for (int i = 0; i < container.getChildCount(); i++) {
+                View child = container.getChildAt(i);
+                if (restoreTag.equals(child.getTag())) {
+                    child.requestFocus();
+                    break;
+                }
             }
         }
 
