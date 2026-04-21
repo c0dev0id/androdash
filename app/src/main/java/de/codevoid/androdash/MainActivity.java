@@ -654,6 +654,12 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        // Escape → clear all selected letters
+        if (keyCode == KeyEvent.KEYCODE_ESCAPE) {
+            letterBar.clearSelection();
+            return true;
+        }
+
         // Enter → launch first app in the filtered result
         if (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
             AppModel first = letterBar.getFirstFilteredApp();
