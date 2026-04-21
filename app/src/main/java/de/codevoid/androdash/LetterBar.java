@@ -446,6 +446,18 @@ public class LetterBar {
         updateButtons();
     }
 
+    public boolean focusFirstAvailable() {
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            String tag = (String) child.getTag();
+            if (tag != null && tag.startsWith("a:")) {
+                child.requestFocus();
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void onSelectedLetterClick(int index) {
         // Remove this letter and all after it
         while (selectedLetters.size() > index) {

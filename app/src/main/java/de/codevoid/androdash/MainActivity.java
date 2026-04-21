@@ -105,7 +105,11 @@ public class MainActivity extends AppCompatActivity {
                     View focused = getCurrentFocus();
                     if (focused != null) focused.performClick();
                 } else if (keyCode == DMD_KEY_BUTTON2) {
-                    letterBar.clearSelection();
+                    if (letterBar.hasSelection()) {
+                        letterBar.clearSelection();
+                    } else {
+                        letterBar.focusFirstAvailable();
+                    }
                 }
             }
 
@@ -707,9 +711,13 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        // Escape → clear all selected letters
+        // Escape → clear selection, or focus first letter if nothing selected
         if (keyCode == KeyEvent.KEYCODE_ESCAPE) {
-            letterBar.clearSelection();
+            if (letterBar.hasSelection()) {
+                letterBar.clearSelection();
+            } else {
+                letterBar.focusFirstAvailable();
+            }
             return true;
         }
 
