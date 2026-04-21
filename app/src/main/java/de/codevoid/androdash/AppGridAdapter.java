@@ -57,6 +57,15 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private static final int VIEW_TYPE_CONFIG = 1;
     private static final int VIEW_TYPE_HISTORY = 2;
 
+    static final View.OnTouchListener FOCUS_ON_TOUCH = (v, event) -> {
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN: v.requestFocus(); return true;
+            case MotionEvent.ACTION_UP:   v.performClick(); return true;
+            case MotionEvent.ACTION_CANCEL: return true;
+        }
+        return false;
+    };
+
     public interface OnConfigToggleListener {
         void onShowAllAppsChanged(boolean showAll);
         void onLetterSortChanged(boolean usageSort);
@@ -212,14 +221,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_app, parent, false);
-        view.setOnTouchListener((v, event) -> {
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN: v.requestFocus(); return true;
-                case MotionEvent.ACTION_UP:   v.performClick(); return true;
-                case MotionEvent.ACTION_CANCEL: return true;
-            }
-            return false;
-        });
+        view.setOnTouchListener(FOCUS_ON_TOUCH);
         return new AppViewHolder(view);
     }
 

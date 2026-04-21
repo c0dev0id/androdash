@@ -9,7 +9,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -90,17 +89,20 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private static final String DMD_ACTION = "com.thorkracing.wireddevices.keypress";
-    private static final int DMD_KEY_BUTTON1 = 66;
-    private static final int DMD_KEY_BUTTON2 = 111;
+    private static final String DMD_ACTION        = "com.thorkracing.wireddevices.keypress";
+    private static final String DMD_EXTRA_KEY     = "key_press";
+    private static final String DMD_EXTRA_REPEAT  = "repeat";
+    private static final String DMD_EXTRA_JOY     = "joy";
+    private static final int    DMD_KEY_BUTTON1   = 66;
+    private static final int    DMD_KEY_BUTTON2   = 111;
 
     private final BroadcastReceiver remoteListener = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (letterBar == null) return;
 
-            if (intent.hasExtra("key_press") && intent.getIntExtra("repeat", 0) == 0) {
-                int keyCode = intent.getIntExtra("key_press", 0);
+            if (intent.hasExtra(DMD_EXTRA_KEY) && intent.getIntExtra(DMD_EXTRA_REPEAT, 0) == 0) {
+                int keyCode = intent.getIntExtra(DMD_EXTRA_KEY, 0);
                 if (keyCode == DMD_KEY_BUTTON1) {
                     View focused = getCurrentFocus();
                     if (focused != null) focused.performClick();
@@ -113,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            String joy = intent.getStringExtra("joy");
+            String joy = intent.getStringExtra(DMD_EXTRA_JOY);
             if (joy != null) {
                 boolean vertical   = joy.startsWith("U5") || joy.startsWith("D5");
                 boolean horizontal = joy.endsWith("L5")   || joy.endsWith("R5");
@@ -324,11 +326,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(remoteListener, new IntentFilter(DMD_ACTION), Context.RECEIVER_EXPORTED);
-        } else {
-            registerReceiver(remoteListener, new IntentFilter(DMD_ACTION));
-        }
+        registerReceiver(remoteListener, new IntentFilter(DMD_ACTION), Context.RECEIVER_EXPORTED);
 
         if (letterBar == null) return;
 

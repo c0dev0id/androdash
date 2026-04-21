@@ -8,7 +8,6 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.view.ViewGroup;
@@ -31,6 +30,8 @@ public class LetterBar {
 
     private static final char GEAR_CHAR = '\u2699';
     private static final char FOLDER_CHAR = '\u2302'; // ⌂
+    private static final String TAG_AVAILABLE = "a:";
+    private static final String TAG_SELECTED  = "s:";
 
     private final Context context;
     private final LinearLayout container;
@@ -196,7 +197,7 @@ public class LetterBar {
         // Selected buttons
         for (int i = 0; i < selectedLetters.size(); i++) {
             char c = selectedLetters.get(i);
-            target.add(new ButtonSpec("s:" + i + ":" + c, c, true, i));
+            target.add(new ButtonSpec(TAG_SELECTED + i + ":" + c, c, true, i));
         }
 
         if (!inConfig) {
@@ -239,20 +240,17 @@ public class LetterBar {
             }
 
             for (Character c : sorted) {
-                target.add(new ButtonSpec("a:" + c, c, false, -1));
+                target.add(new ButtonSpec(TAG_AVAILABLE + c, c, false, -1));
             }
 
             // Gear button
-            target.add(new ButtonSpec("a:" + GEAR_CHAR, GEAR_CHAR, false, -1));
+            target.add(new ButtonSpec(TAG_AVAILABLE + GEAR_CHAR, GEAR_CHAR, false, -1));
         }
 
         return target;
     }
 
     private void updateButtons() {
-        // Save the focused button's tag so we can restore focus after the rebuild.
-        // When a letter transitions available→selected its tag changes from "a:X" to "s:N:X",
-        // and vice-versa; we remap accordingly.
         String focusedTag = null;
         for (int i = 0; i < container.getChildCount(); i++) {
             View child = container.getChildAt(i);
@@ -335,7 +333,7 @@ public class LetterBar {
         for (int i = 0; i < container.getChildCount(); i++) {
             Button btn = (Button) container.getChildAt(i);
             String tag = (String) btn.getTag();
-            if (tag != null && tag.startsWith("a:") && !tag.equals("a:" + GEAR_CHAR) && !tag.equals("a:" + FOLDER_CHAR)) {
+            if (tag != null && tag.startsWith(TAG_AVAILABLE) && !tag.equals(TAG_AVAILABLE + GEAR_CHAR) && !tag.equals(TAG_AVAILABLE + FOLDER_CHAR)) {
                 boolean isFocused = (availableCount == focusedAvailableIndex);
                 if (isFocused) {
                     btn.setBackgroundResource(R.drawable.bg_button_focused);
@@ -344,25 +342,19 @@ public class LetterBar {
             }
         }
 
-        // Restore focus to the equivalent button after the rebuild
         if (focusedTag != null) {
-            Set<String> newTags = new HashSet<>();
-            for (ButtonSpec spec : target) newTags.add(spec.tag);
-
             String restoreTag = focusedTag;
-            if (!newTags.contains(focusedTag)) {
-                if (focusedTag.startsWith("a:") && focusedTag.length() == 3) {
-                    // Available letter was just selected → find its new selected tag
-                    char letter = focusedTag.charAt(2);
+            if (!targetTags.contains(focusedTag)) {
+                if (focusedTag.startsWith(TAG_AVAILABLE) && focusedTag.length() == TAG_AVAILABLE.length() + 1) {
+                    char letter = focusedTag.charAt(TAG_AVAILABLE.length());
                     for (ButtonSpec spec : target) {
                         if (spec.selected && spec.letter == letter) {
                             restoreTag = spec.tag;
                             break;
                         }
                     }
-                } else if (focusedTag.startsWith("s:")) {
-                    // Selected letter was removed → find its new available tag
-                    restoreTag = "a:" + focusedTag.charAt(focusedTag.length() - 1);
+                } else if (focusedTag.startsWith(TAG_SELECTED)) {
+                    restoreTag = TAG_AVAILABLE + focusedTag.charAt(focusedTag.length() - 1);
                 }
             }
             for (int i = 0; i < container.getChildCount(); i++) {
@@ -492,7 +484,7 @@ public class LetterBar {
         for (int i = 0; i < container.getChildCount(); i++) {
             View child = container.getChildAt(i);
             String tag = (String) child.getTag();
-            if (tag != null && tag.startsWith("a:")) {
+            if (tag != null && tag.startsWith(TAG_AVAILABLE)) {
                 child.requestFocus();
                 return true;
             }
@@ -535,14 +527,7 @@ public class LetterBar {
         btn.setMinimumHeight(0);
         btn.setPadding(0, 0, 0, 0);
         btn.setFocusableInTouchMode(true);
-        btn.setOnTouchListener((v, event) -> {
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN: v.requestFocus(); return true;
-                case MotionEvent.ACTION_UP:   v.performClick(); return true;
-                case MotionEvent.ACTION_CANCEL: return true;
-            }
-            return false;
-        });
+        btn.setOnTouchListener(AppGridAdapter.FOCUS_ON_TOUCH);
 
         int size = context.getResources().getDimensionPixelSize(R.dimen.letter_button_size);
         int margin = context.getResources().getDimensionPixelSize(R.dimen.letter_button_margin);
