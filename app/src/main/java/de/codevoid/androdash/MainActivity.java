@@ -450,6 +450,8 @@ public class MainActivity extends AppCompatActivity {
         }
         GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount);
         appGrid.setLayoutManager(layoutManager);
+        appGrid.setFocusable(false);
+        appGrid.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
 
         int spacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
         // Remove old decorations before adding new one
@@ -660,12 +662,11 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        // Enter → launch first app in the filtered result
+        // Enter → activate the focused view
         if (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
-            AppModel first = letterBar.getFirstFilteredApp();
-            if (first != null && first.launchIntent != null) {
-                appHistoryStore.recordLaunch(first.packageName);
-                startActivity(first.launchIntent);
+            View focused = getCurrentFocus();
+            if (focused != null) {
+                focused.performClick();
             }
             return true;
         }
