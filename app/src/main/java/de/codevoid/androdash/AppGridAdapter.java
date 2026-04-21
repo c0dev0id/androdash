@@ -20,6 +20,7 @@ import android.os.Process;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -211,6 +212,14 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_app, parent, false);
+        view.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN: v.requestFocus(); return true;
+                case MotionEvent.ACTION_UP:   v.performClick(); return true;
+                case MotionEvent.ACTION_CANCEL: return true;
+            }
+            return false;
+        });
         return new AppViewHolder(view);
     }
 

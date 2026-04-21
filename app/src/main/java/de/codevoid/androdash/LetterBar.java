@@ -8,6 +8,7 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.view.ViewGroup;
@@ -480,6 +481,14 @@ public class LetterBar {
         btn.setMinimumHeight(0);
         btn.setPadding(0, 0, 0, 0);
         btn.setFocusableInTouchMode(true);
+        btn.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN: v.requestFocus(); return true;
+                case MotionEvent.ACTION_UP:   v.performClick(); return true;
+                case MotionEvent.ACTION_CANCEL: return true;
+            }
+            return false;
+        });
 
         int size = context.getResources().getDimensionPixelSize(R.dimen.letter_button_size);
         int margin = context.getResources().getDimensionPixelSize(R.dimen.letter_button_margin);
