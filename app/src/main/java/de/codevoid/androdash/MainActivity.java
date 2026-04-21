@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -85,6 +86,27 @@ public class MainActivity extends AppCompatActivity {
                         folderStore.removePackageFromAllFolders(packageName);
                     }
                 }
+            }
+        }
+    };
+
+    private static final String DMD_ACTION = "com.thorkracing.wireddevices.keypress";
+    private static final int DMD_KEY_BUTTON1 = 66;
+    private static final int DMD_KEY_BUTTON2 = 111;
+
+    private final BroadcastReceiver remoteListener = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (letterBar == null) return;
+            if (!intent.hasExtra("key_press")) return;
+            if (intent.getIntExtra("repeat", 0) != 0) return;
+
+            int keyCode = intent.getIntExtra("key_press", 0);
+            if (keyCode == DMD_KEY_BUTTON1) {
+                View focused = getCurrentFocus();
+                if (focused != null) focused.performClick();
+            } else if (keyCode == DMD_KEY_BUTTON2) {
+                letterBar.clearSelection();
             }
         }
     };
@@ -278,6 +300,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(remoteListener, new IntentFilter(DMD_ACTION), Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(remoteListener, new IntentFilter(DMD_ACTION));
+        }
+
         if (letterBar == null) return;
 
         // Exit config mode if returning from background
@@ -301,6 +329,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         isResumed = false;
+        try {
+            unregisterReceiver(remoteListener);
+        } catch (Exception ignored) {}
     }
 
     @Override
