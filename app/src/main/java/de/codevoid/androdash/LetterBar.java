@@ -479,6 +479,7 @@ public class LetterBar {
         btn.setMinimumWidth(0);
         btn.setMinimumHeight(0);
         btn.setPadding(0, 0, 0, 0);
+        btn.setFocusableInTouchMode(true);
 
         int size = context.getResources().getDimensionPixelSize(R.dimen.letter_button_size);
         int margin = context.getResources().getDimensionPixelSize(R.dimen.letter_button_margin);
