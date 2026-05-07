@@ -77,8 +77,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             appsDirty = true;
-            // Clean up folder membership when an app is uninstalled
-            if (Intent.ACTION_PACKAGE_REMOVED.equals(intent.getAction()) && folderStore != null) {
+            // Clean up folder membership only on real uninstall, not on update.
+            // App updates fire REMOVED+ADDED with EXTRA_REPLACING=true.
+            if (Intent.ACTION_PACKAGE_REMOVED.equals(intent.getAction())
+                    && !intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
+                    && folderStore != null) {
                 Uri data = intent.getData();
                 if (data != null) {
                     String packageName = data.getSchemeSpecificPart();

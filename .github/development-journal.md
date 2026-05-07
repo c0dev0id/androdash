@@ -39,6 +39,9 @@ Additionally, ENTER key handling in the broadcast receiver uses a scoped `post()
 
 **Earlier fixes still in effect**: `onGenericMotionEvent` consumes `SOURCE_JOYSTICK` events at Activity level (prevents RecyclerView joystick-scroll from recycling focused items). Joy neutral sentinel check accepts `"Y0"` and `"X0"` in addition to `"Y0X0"` (matches hardware that releases axes independently).
 
+### Package-update vs. uninstall must check `EXTRA_REPLACING` (2026-05-07)
+App updates fire `ACTION_PACKAGE_REMOVED` followed by `ACTION_PACKAGE_ADDED`, both with `EXTRA_REPLACING=true`. Treating `REMOVED` as a real uninstall means destructive cleanup runs on every update. The package receiver now guards `folderStore.removePackageFromAllFolders(...)` behind a `!EXTRA_REPLACING` check; the apps-dirty flag is still set unconditionally so icon/label changes still trigger a reload. Any future per-package state (bookmarks, history, hidden flags) added to the same receiver must apply the same guard.
+
 ### Stale `focusedAvailableIndex` Reference Fixed (2026-04-14)
 The `clearSelection()` method in `LetterBar` still contained `focusedAvailableIndex = -1` after the native focus traversal refactor removed the field. This caused a compile error in CI. When removing fields during a refactor, search for all write sites (reset/clear assignments), not just read sites — IDEs often miss stale writes.
 
