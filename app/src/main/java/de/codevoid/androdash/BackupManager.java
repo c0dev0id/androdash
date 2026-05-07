@@ -59,6 +59,14 @@ public class BackupManager {
                 hiddenArr.put(pkg);
             }
             settings.put("hidden_packages", hiddenArr);
+
+            Set<String> historyExcluded = prefs.getStringSet("history_excluded_packages", new HashSet<>());
+            JSONArray historyExcludedArr = new JSONArray();
+            for (String pkg : historyExcluded) {
+                historyExcludedArr.put(pkg);
+            }
+            settings.put("history_excluded_packages", historyExcludedArr);
+
             root.put("settings", settings);
 
             // Bookmarks
@@ -143,6 +151,18 @@ public class BackupManager {
                         }
                     }
                     editor.putStringSet("hidden_packages", hiddenSet);
+                }
+
+                if (settings.has("history_excluded_packages")) {
+                    JSONArray arr = settings.getJSONArray("history_excluded_packages");
+                    Set<String> set = new HashSet<>();
+                    for (int i = 0; i < arr.length(); i++) {
+                        String pkg = arr.getString(i);
+                        if (installedPackages.contains(pkg)) {
+                            set.add(pkg);
+                        }
+                    }
+                    editor.putStringSet("history_excluded_packages", set);
                 }
             }
 

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Apps no longer drop out of their folder when updated. The package-removed receiver now skips folder cleanup when the broadcast carries `EXTRA_REPLACING`, so updates (which fire REMOVED+ADDED) preserve folder membership.
+- Backup/restore now preserves the per-app "hide from history" flag. The export and import paths previously round-tripped only `hidden_packages` and silently dropped `history_excluded_packages`. Backups taken before this change can still be imported — the missing key is treated as empty.
 
 ### Removed
 - DMD wired remote control support (broadcast-based D-pad navigation).
