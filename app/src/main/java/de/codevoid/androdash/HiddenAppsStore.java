@@ -22,21 +22,15 @@ public class HiddenAppsStore {
         historyExcludedPackages = new HashSet<>(prefs.getStringSet(KEY_HISTORY_EXCLUDED, new HashSet<>()));
     }
 
-    public void hideApp(String packageName) {
-        hiddenPackages.add(packageName);
-        historyExcludedPackages.remove(packageName);
+    public void setHidden(String packageName, boolean hidden) {
+        if (hidden) hiddenPackages.add(packageName);
+        else        hiddenPackages.remove(packageName);
         save();
     }
 
-    public void showApp(String packageName) {
-        hiddenPackages.remove(packageName);
-        historyExcludedPackages.remove(packageName);
-        save();
-    }
-
-    public void excludeFromHistory(String packageName) {
-        hiddenPackages.remove(packageName);
-        historyExcludedPackages.add(packageName);
+    public void setExcludedFromHistory(String packageName, boolean excluded) {
+        if (excluded) historyExcludedPackages.add(packageName);
+        else          historyExcludedPackages.remove(packageName);
         save();
     }
 

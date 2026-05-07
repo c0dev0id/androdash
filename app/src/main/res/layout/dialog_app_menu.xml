@@ -95,14 +95,25 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Options"
+                android:text="Hide app:"
                 android:textColor="@color/text_secondary"
                 android:textSize="@dimen/text_size_small"
                 android:fontFamily="@font/apotek"
                 android:layout_marginBottom="@dimen/grid_spacing" />
 
             <TextView
-                android:id="@+id/btnHideShow"
+                android:id="@+id/btnHideFromList"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/app_card_height"
+                android:background="@drawable/bg_button"
+                android:gravity="center"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_size_small"
+                android:fontFamily="@font/apotek"
+                android:layout_marginBottom="@dimen/grid_spacing" />
+
+            <TextView
+                android:id="@+id/btnHideFromHistory"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/app_card_height"
                 android:background="@drawable/bg_button"
@@ -155,7 +166,7 @@
                 android:layout_height="@dimen/app_card_height"
                 android:background="@drawable/bg_button"
                 android:gravity="center"
-                android:text="Cancel"
+                android:text="Close"
                 android:textColor="@color/text_primary"
                 android:textSize="@dimen/text_size_small"
                 android:fontFamily="@font/apotek" />

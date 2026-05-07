@@ -39,6 +39,13 @@ Additionally, ENTER key handling in the broadcast receiver uses a scoped `post()
 
 **Earlier fixes still in effect**: `onGenericMotionEvent` consumes `SOURCE_JOYSTICK` events at Activity level (prevents RecyclerView joystick-scroll from recycling focused items). Joy neutral sentinel check accepts `"Y0"` and `"X0"` in addition to `"Y0X0"` (matches hardware that releases axes independently).
 
+### Per-app hide UI: two independent toggles (2026-05-07)
+The app long-press dialog used a single tri-state TextView (`btnHideShow`) that cycled show → hide → hide-from-history → show, dismissing the dialog on every press. Reaching the third state required re-opening the dialog and a config-mode detour because the just-hidden app vanished from the grid.
+
+`HiddenAppsStore` already kept two independent sets (`hidden_packages`, `history_excluded_packages`); the tri-state was an artificial UX-layer mutual exclusion. The store now exposes `setHidden(pkg, bool)` and `setExcludedFromHistory(pkg, bool)` and lets both flags be true simultaneously. The dialog has two TextView toggles ("Hide from app list", "Hide from history") that swap between `bg_button` and `bg_button_selected` on click — the selected drawable is already a state-list selector, so focus styling for remote-control nav works without extra drawables. Toggles persist immediately and fire the existing `onAppHiddenChanged` listener so the grid refreshes live behind the dialog. The dialog only dismisses on the explicit "Close" button.
+
+`MainActivity.refreshDisplayedApps()` already AND-ed both flags in its history filter and gated the grid filter on `isHidden` only, so all four flag combinations were correctly handled with no filter changes. Existing user data carries forward unchanged because the legacy three-way state is a strict subset of the new state space.
+
 ### Package-update vs. uninstall must check `EXTRA_REPLACING` (2026-05-07)
 App updates fire `ACTION_PACKAGE_REMOVED` followed by `ACTION_PACKAGE_ADDED`, both with `EXTRA_REPLACING=true`. Treating `REMOVED` as a real uninstall means destructive cleanup runs on every update. The package receiver now guards `folderStore.removePackageFromAllFolders(...)` behind a `!EXTRA_REPLACING` check; the apps-dirty flag is still set unconditionally so icon/label changes still trigger a reload. Any future per-package state (bookmarks, history, hidden flags) added to the same receiver must apply the same guard.
 
