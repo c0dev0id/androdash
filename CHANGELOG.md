@@ -18,3 +18,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 - DMD wired remote control support (broadcast-based D-pad navigation).
+- The unused `KILL_BACKGROUND_PROCESSES` permission. It was declared in the manifest but never used by any code path.
