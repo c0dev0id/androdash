@@ -53,7 +53,3 @@ Tap the gear icon (&#9881;) in the letter bar to open the config panel:
 | **Add Bookmark** | Create a URL bookmark |
 | **Add Folder** | Create an app folder |
 | **Backup** | Back up or restore your configuration |
-
-## License
-
-See repository for license details.
