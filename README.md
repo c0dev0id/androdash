@@ -6,40 +6,26 @@
   <b>A fast, keyboard-driven Android launcher with letter-based navigation.</b>
 </p>
 
----
-
-## Screenshots
-
-<p align="center">
-  <img src="docs/screenshots/main_grid.png" alt="Main app grid" width="45%"/>
-  &nbsp;
-  <img src="docs/screenshots/letter_filter.png" alt="Letter filtering" width="45%"/>
-</p>
-<p align="center">
-  <img src="docs/screenshots/app_menu.png" alt="App context menu" width="45%"/>
-  &nbsp;
-  <img src="docs/screenshots/sorted_grid.png" alt="Sorted app grid" width="45%"/>
-</p>
+Androdash filters your apps by tapping or typing letters instead of scrolling
+through a grid. Built for minimal, low-distraction use on phones, tablets, and
+devices with hardware remotes.
 
 ## Features
 
-- **Letter-based navigation** -- Tap letters to progressively filter apps. Type "A", then "N", then "D" to quickly find "Androdash". Available letters update dynamically based on your current selection.
-
-- **Keyboard support** -- Plug in a keyboard and just start typing. Press Enter to launch the first match, Backspace to clear.
-
-- **Configurable letterbar** -- Position the letter bar on any edge: top, bottom, left, or right. The grid layout adapts automatically.
-
-- **Usage-based sorting** -- The launcher learns which letters you pick most often and reorders them for faster access.
-
-- **App history** -- A row of recently launched apps appears at the top for quick re-access.
-
-- **Long-press menu** -- Shows app shortcuts (when set as default launcher), plus options to hide, uninstall, or open app info.
-
-- **Hide apps** -- Remove apps from the grid without uninstalling. Toggle visibility from the config panel or long-press menu.
-
-- **Dark theme** -- A dark interface with orange accents, designed for low-distraction use.
-
-- **Auto-update** -- Check for and install updates directly from the config panel via GitHub nightly releases.
+- **Letter navigation** — Tap letters to progressively narrow the app list. Available letters update as you select.
+- **Keyboard support** — Start typing to filter. Enter launches the first match, Backspace clears.
+- **Match methods** — Switch how typed letters match app names (prefix, contains, and more).
+- **Usage-based sorting** — Letters you pick most often move to the front.
+- **App history** — A row of recently launched apps for quick re-access.
+- **Folders** — Group apps into folders with custom labels and icons.
+- **Bookmarks** — Add shortcuts to URLs alongside your apps.
+- **Hide apps** — Hide apps from the grid and/or from history, without uninstalling.
+- **Long-press menu** — App shortcuts, hide toggles, add to folder, uninstall, and app info.
+- **Configurable letterbar** — Place the letter bar on any edge; the grid adapts.
+- **Hardware remote** — Navigate focus with a joystick remote; select and back buttons supported.
+- **Backup & restore** — Save and restore settings, folders, bookmarks, and hidden apps.
+- **Dark theme** — Dark interface with orange accents.
+- **Auto-update** — Check for and install nightly builds from the config panel.
 
 ## Requirements
 
@@ -47,27 +33,26 @@
 
 ## Installation
 
-Download the latest APK from the [Releases](../../releases) page and install it on your device. When prompted to choose a home app, select **Androdash**.
-
-To get full app shortcut access in the long-press menu, set Androdash as your default launcher.
+1. Download the latest APK from the [Releases](../../releases) page.
+2. Install it on your device.
+3. When prompted to choose a home app, select **Androdash**.
+4. For full app-shortcut access in the long-press menu, set Androdash as your default launcher.
 
 ## Configuration
 
-Tap the gear icon (&#9881;) in the letter bar to reveal five toggles:
+Tap the gear icon (&#9881;) in the letter bar to open the config panel:
 
-| Toggle | Description |
-|--------|-------------|
+| Item | Description |
+|------|-------------|
 | **Show all Apps** | Reveal hidden apps (shown at reduced opacity) |
-| **Lettersort** | Switch between alphabetical and usage-based letter ordering |
-| **Letterbar Position** | Cycle through top / bottom / left / right placement |
+| **Lettersort** | Toggle alphabetical vs. usage-based letter ordering |
+| **Match** | Cycle through letter-matching methods |
+| **Letterbar** | Cycle placement: top / bottom / left / right |
 | **App History** | Show or hide the recent apps row |
-| **Version** | View current build and check for updates |
-
-## Building
-
-```
-./gradlew assembleDebug
-```
+| **Version** | Show current build; tap to check for updates |
+| **Add Bookmark** | Create a URL bookmark |
+| **Add Folder** | Create an app folder |
+| **Backup** | Back up or restore your configuration |
 
 ## License
 
