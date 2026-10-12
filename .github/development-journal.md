@@ -1,12 +1,16 @@
 # Development Journal
 
+## Overview and Intent
+
+Androdash is a launcher for devices where scrolling a grid is slow or impractical: phones and tablets used one-handed, and mounted devices driven by a hardware remote. Instead of scrolling, the user narrows the app list by selecting letters on a letter bar; each selection filters the grid and prunes the bar down to letters that still match. The same letter bar is reachable by touch, by physical keyboard, and by a HID remote, so one navigation model covers every input device.
+
 ## Software Stack
 
-- **Language**: Java (app), Kotlin (andRemote2 companion app)
+- **Language**: Java
 - **Platform**: Android (minSdk 34, targets modern Android)
 - **UI**: Programmatic layouts (no XML for main UI), RecyclerView + GridLayoutManager for app grid
 - **Build**: AGP via CI only — local Gradle builds are blocked by proxy/network restrictions
-- **Input**: `dispatchKeyEvent` for both physical keyboards and the DMD remote (which enumerates as a USB-HID keyboard)
+- **Input**: `dispatchKeyEvent` in `MainActivity` for every key source: physical/Bluetooth keyboards and the DMD remote, which enumerates as a USB-HID keyboard
 
 ## Key Decisions
 
@@ -20,37 +24,38 @@ The app was flagged by Google Play Protect. A comparison against motoLauncher (s
 
 The in-app updater still compares `BuildConfig.GIT_HASH` against the release asset name, not `versionCode`.
 
+### Input and Focus Model (current as of 2026-10-12)
+
+All navigation uses Android's native focus system. There is no custom focus index or direction handling in the app.
+
+**Focusable views**:
+- Letter bar buttons: `setFocusableInTouchMode(true)` in `LetterBar.createLetterButton()`, so they keep focus after a touch.
+- App grid items: `item_app.xml` sets `focusable` and `focusableInTouchMode`. The `RecyclerView` itself is `setFocusable(false)` with `FOCUS_AFTER_DESCENDANTS` so D-pad traversal lands on items, not the container.
+- Focus highlight is a `state_focused` item in the `bg_button`, `bg_button_selected`, `bg_app_card` and `bg_app_card_history` selector drawables (all point at `bg_button_focused`). No `OnFocusChangeListener` is needed.
+- `AppGridAdapter.FOCUS_ON_TOUCH` is the shared touch listener for grid items and letter buttons: `ACTION_DOWN` requests focus and arms a long-press timer, `ACTION_UP` fires the click. This keeps touch and key input on the same focused view.
+
+**Key handling** (`MainActivity.dispatchKeyEvent`, `ACTION_DOWN` only):
+- Any event with `getRepeatCount() > 0` is consumed and ignored. A held key acts once.
+- Backspace → `LetterBar.removeLastLetter()`
+- Escape → `clearSelection()` if letters are selected, else `focusFirstAvailable()`
+- Enter / numpad Enter → `performClick()` on `getCurrentFocus()`
+- Letter keys → `LetterBar.selectLetter(char)`
+- Everything else, including D-pad, falls through to `super.dispatchKeyEvent()` and the framework's `focusSearch()` traversal.
+- Hardware back (`onBackPressed`) → `removeLastLetter()`
+
+**Focus survival across rebuilds**: `LetterBar.updateButtons()` rebuilds the button row on every selection change, which would drop focus. Before rebuilding it records the focused button's tag; after rebuilding it re-requests focus on the button with that tag, falling back to the corresponding available-letter button when a selected letter was just removed.
+
+### DMD Remote: Broadcast Protocol Replaced by HID Key Events (2026-10-12)
+
+Until this date the DMD remote was driven by a `BroadcastReceiver` on `com.thorkracing.wireddevices.keypress` (`key_press` extras for buttons, `joy` strings for the joystick). The DMD companion app now signature-protects that broadcast, so third-party apps cannot receive it. The remote still enumerates as a USB-HID keyboard and emits D-pad for the joystick, Enter for button 1 and Escape for button 2.
+
+The receiver, its `onResume`/`onPause` registration, the joystick string parser, and the 100 ms timestamp hack that dropped the duplicate KeyEvent each button press used to produce were all removed. The remote now takes the same `dispatchKeyEvent` path as a keyboard. Because input arrives through `ViewRootImpl`, touch mode exits on its own; the earlier broadcast-era workarounds (`requestFocusFromTouch()`, scoped `FocusFinder`, `OnGlobalFocusChangeListener`, `onGenericMotionEvent` joystick suppression) are gone and must not be reintroduced.
+
+Lesson from the broadcast era: injecting input from outside the view system means fighting touch mode, focus restoration and duplicate events by hand. Prefer input that arrives as `KeyEvent`.
+
 ### Native Android Focus Traversal (2026-04-14)
-Replaced the custom `focusedAvailableIndex` integer tracking in `LetterBar` with Android's native `View.focusSearch()` + `requestFocus()` system.
 
-**Why**: The custom system only covered the letter bar and had no concept of the app grid. The new approach lets focus move freely between letter buttons and RecyclerView items with zero extra navigation code — `GridLayoutManager` and the spatial view hierarchy handle all traversal automatically.
-
-**How it works**: `Button` objects in `LetterBar` are focusable by default; `LinearLayout` items in the RecyclerView are made focusable via `setFocusable(true)` in `onCreateViewHolder`. `OnFocusChangeListener` on each view swaps the background drawable (`bg_button_focused` / `bg_app_card_focused`) on focus gain/loss. The `navigateFocus(direction)` helper in `MainActivity` calls `getCurrentFocus().focusSearch(direction).requestFocus()`.
-
-**Input paths**:
-- Remote (`com.thorkracing.wireddevices.keypress` broadcast): joystick `joy` string parsed as a sequence of `<axis><magnitude>` pairs; the axis with the largest magnitude wins and navigation fires only when that magnitude is 5; `key_press` keycodes for Enter/Escape route to `performClick()` / `clearAllLetters()`.
-- Physical keyboard (`dispatchKeyEvent`): Enter → `performClick()`, Escape → `clearAllLetters()` + `focusFirstButton()`, Backspace → `removeLastLetter()`, letter keys → `selectLetter()`. D-pad keys are NOT handled here — broadcast-only.
-
-**Joy string format** (andRemote2 SPECIFICATION.md §"Signal 1"): strings like `"L5"`, `"U5L4"`, `"U3R4"` — one or more `<axis><magnitude>` pairs where axis ∈ {U,D,L,R} and magnitude ∈ {2..5}. The neutral sentinels emitted on release are `"Y0X0"` (both axes simultaneously), `"Y0"` (Y-axis only), or `"X0"` (X-axis only). The string is only broadcast when it changes, so natural finger drift at full deflection produces rapid bursts of near-identical payloads (e.g. `U5` → `U5L2` → `U5`).
-
-**Keydown/keyup model**: we treat the joystick as a digital key via a `joyHeld` boolean latch. A payload whose dominant axis has magnitude 5 is a key-down: navigate once in that direction, set `joyHeld = true`. Any of `"Y0X0"`, `"Y0"`, or `"X0"` is a key-up: clear `joyHeld`. Anything else (sub-5 magnitude payloads, drift payloads received while `joyHeld`) is ignored. Net effect: one physical push = one focus move, even under drift.
-
-### Remote Focus Handling Architecture (2026-04-18)
-
-Remote input via `BroadcastReceiver` bypasses `ViewRootImpl` entirely, which means Android's touch mode is never exited automatically. This is the fundamental difference from physical keyboard input and the root cause of all remote focus issues. Three mechanisms now cooperate to keep focus working:
-
-1. **`requestFocusFromTouch()` everywhere**: All remote-triggered focus calls use `requestFocusFromTouch()` instead of `requestFocus()`. The former calls `viewRoot.ensureTouchMode(false)` internally, exiting touch mode before granting focus. Without this, `requestFocus()` silently fails on `Button` (not focusable in touch mode by default).
-
-2. **Scoped `FocusFinder`**: `navigateFocus()` uses `FocusFinder.getInstance().findNextFocus(letterScrollView, current, direction)` when the focused view is inside the letter bar. This prevents `HorizontalScrollView`/`ScrollView` (focusable containers with no visible indicator) from winning focus. Falls back to window-wide `focusSearch()` for cross-boundary navigation (bar ↔ app grid). An `isDescendantOf()` guard prevents an `IllegalArgumentException` crash when the focused view is not a descendant of the search root. Note: `View.isDescendantOf()` exists in AOSP but is `@hide` — the custom helper is necessary.
-
-3. **`OnGlobalFocusChangeListener`**: Detects when focus is cleared without a navigation target (touch-mode entry from overlay touch). If `newFocus == null` and `oldFocus` is still attached to the window, focus was cleared by touch mode — not by a layout change. A deferred `requestFocusFromTouch()` restores it. The ENTER case (button removed from tree) is excluded because `isAttachedToWindow()` returns false after `removeViewAt()`.
-
-Additionally, ENTER key handling in the broadcast receiver uses a scoped `post()` fallback to restore focus after `updateButtons()` removes the focused view from the tree.
-
-**Earlier fixes still in effect**: `onGenericMotionEvent` consumes `SOURCE_JOYSTICK` events at Activity level (prevents RecyclerView joystick-scroll from recycling focused items). Joy neutral sentinel check accepts `"Y0"` and `"X0"` in addition to `"Y0X0"` (matches hardware that releases axes independently).
-
-### DMD Remote Switched to HID Key Events (2026-10-12)
-The DMD companion app now signature-protects its `com.thorkracing.wireddevices.keypress` broadcast, so third-party apps cannot receive it. The remote instead emits plain HID key events: D-pad for the joystick, Enter for button 1, Escape for button 2. The `BroadcastReceiver`, its lifecycle registration, and the 100 ms timestamp hack that dropped the duplicate KeyEvent were all removed. The framework's own focus traversal handles D-pad; `dispatchKeyEvent` already handled Enter/Escape for keyboards. `dispatchKeyEvent` now returns early for any `ACTION_DOWN` with `getRepeatCount() > 0` so a held button acts once. This supersedes the "Remote Focus Handling Architecture" and "HID Suppression Block Removed" entries below: with input going through `ViewRootImpl`, touch mode exits on its own and none of the broadcast-specific focus workarounds apply.
+Replaced custom index-based focus tracking in `LetterBar` with `View.focusSearch()` + `requestFocus()`. The custom system only covered the letter bar and had no concept of the app grid; native traversal moves freely between letter buttons and RecyclerView items with no navigation code. Note: `LetterBar` still carries the unused `focusedAvailableIndex` field and the `focusNext()` / `focusPrev()` / `selectFocused()` methods from the old system. Nothing calls them.
 
 ### Per-app hide UI: two independent toggles (2026-05-07)
 The app long-press dialog used a single tri-state TextView (`btnHideShow`) that cycled show → hide → hide-from-history → show, dismissing the dialog on every press. Reaching the third state required re-opening the dialog and a config-mode detour because the just-hidden app vanished from the grid.
@@ -62,22 +67,12 @@ The app long-press dialog used a single tri-state TextView (`btnHideShow`) that 
 ### Package-update vs. uninstall must check `EXTRA_REPLACING` (2026-05-07)
 App updates fire `ACTION_PACKAGE_REMOVED` followed by `ACTION_PACKAGE_ADDED`, both with `EXTRA_REPLACING=true`. Treating `REMOVED` as a real uninstall means destructive cleanup runs on every update. The package receiver now guards `folderStore.removePackageFromAllFolders(...)` behind a `!EXTRA_REPLACING` check; the apps-dirty flag is still set unconditionally so icon/label changes still trigger a reload. Any future per-package state (bookmarks, history, hidden flags) added to the same receiver must apply the same guard.
 
-### Stale `focusedAvailableIndex` Reference Fixed (2026-04-14)
-The `clearSelection()` method in `LetterBar` still contained `focusedAvailableIndex = -1` after the native focus traversal refactor removed the field. This caused a compile error in CI. When removing fields during a refactor, search for all write sites (reset/clear assignments), not just read sites — IDEs often miss stale writes.
-
-### andRemote2 Joystick Support (2026-04-14)
-The 360° joystick in andRemote2 sends `joy` extras via the same broadcast action. Previously ignored entirely. Now handled by `remoteListener` alongside `key_press` button events.
-
-### HID Suppression Block Removed (2026-04-14)
-The old `dispatchKeyEvent` contained a block that suppressed DPAD/Enter/Escape keycodes when source included `SOURCE_KEYBOARD` (to prevent DMD remote double-processing). This was removed because the remote communicates exclusively via broadcasts and does not generate HID keyboard events.
-
 ## Core Features
 
 - **App launcher**: filterable grid of installed apps, bookmarks, and folders
 - **Letter bar**: tappable/navigable character buttons that progressively filter the app list; supports beginning, anywhere, and fuzzy match modes
 - **Folder support**: group apps into named folders with custom icons
 - **History**: recently launched apps shown at top of grid (with per-app opt-out)
-- **Remote control**: DMD remote drives the same key path as a physical keyboard (D-pad, Enter, Escape)
-- **Keyboard navigation**: arrow keys, Enter, Escape, Backspace, and letter keys all work from a physical keyboard
+- **Keyboard and remote navigation**: arrow keys / D-pad move focus, Enter activates, Escape clears, Backspace removes the last letter, letter keys select; the DMD remote and physical keyboards share this path
 - **Hidden apps**: apps can be hidden from the grid or excluded from history independently
 - **Config mode**: gear button enters settings screen within the launcher

@@ -13,7 +13,7 @@ devices with hardware remotes.
 ## Features
 
 - **Letter navigation** — Tap letters to progressively narrow the app list. Available letters update as you select.
-- **Keyboard support** — Start typing to filter. Enter launches the first match, Backspace clears.
+- **Keyboard support** — Start typing to filter. Arrow keys move focus, Enter launches the focused app, Backspace removes the last letter, Escape clears.
 - **Match methods** — Switch how typed letters match app names (prefix, contains, and more).
 - **Usage-based sorting** — Letters you pick most often move to the front.
 - **App history** — A row of recently launched apps for quick re-access.
