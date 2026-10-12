@@ -1042,123 +1042,47 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         dialog.show();
     }
 
-    // ---- Folder selection dialog ----
+    // ---- Backup dialog ----
 
     private void showBackupDialog() {
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(32, 32, 32, 32);
-
-        TextView title = new TextView(context);
-        title.setText("Backup");
-        title.setTextColor(context.getColor(R.color.text_primary));
-        title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
-        title.setTypeface(title.getTypeface(), Typeface.BOLD);
-        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        titleParams.bottomMargin = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
-        title.setLayoutParams(titleParams);
-        layout.addView(title);
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_backup, null);
 
         AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
-                .setView(layout)
+                .setView(dialogView)
                 .create();
 
-        int spacing = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
-        int cardHeight = context.getResources().getDimensionPixelSize(R.dimen.app_card_height);
-
-        // Export button
-        TextView btnExport = new TextView(context);
-        btnExport.setText("Export");
-        btnExport.setBackgroundResource(R.drawable.bg_button);
-        btnExport.setGravity(Gravity.CENTER);
-        btnExport.setTextColor(context.getColor(R.color.text_primary));
-        btnExport.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-        LinearLayout.LayoutParams exportLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
-        exportLp.bottomMargin = spacing;
-        btnExport.setLayoutParams(exportLp);
-        btnExport.setOnClickListener(v -> {
+        dialogView.findViewById(R.id.btnBackupExport).setOnClickListener(v -> {
             dialog.dismiss();
             if (backupListener != null) backupListener.onExportRequested();
         });
-        layout.addView(btnExport);
 
-        // Import button
-        TextView btnImport = new TextView(context);
-        btnImport.setText("Import");
-        btnImport.setBackgroundResource(R.drawable.bg_button);
-        btnImport.setGravity(Gravity.CENTER);
-        btnImport.setTextColor(context.getColor(R.color.text_primary));
-        btnImport.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-        LinearLayout.LayoutParams importLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
-        importLp.bottomMargin = spacing;
-        btnImport.setLayoutParams(importLp);
-        btnImport.setOnClickListener(v -> {
+        dialogView.findViewById(R.id.btnBackupImport).setOnClickListener(v -> {
             dialog.dismiss();
             if (backupListener != null) backupListener.onImportRequested();
         });
-        layout.addView(btnImport);
 
-        // Cancel button
-        TextView btnCancel = new TextView(context);
-        btnCancel.setText("Cancel");
-        btnCancel.setBackgroundResource(R.drawable.bg_button);
-        btnCancel.setGravity(Gravity.CENTER);
-        btnCancel.setTextColor(context.getColor(R.color.text_primary));
-        btnCancel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-        LinearLayout.LayoutParams cancelLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
-        btnCancel.setLayoutParams(cancelLp);
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
-        layout.addView(btnCancel);
+        dialogView.findViewById(R.id.btnBackupCancel).setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }
+
+    // ---- Folder selection dialog ----
 
     private void showFolderSelectionDialog(AppModel app) {
         List<FolderStore.FolderData> folders = folderStore.getAll();
         if (folders.isEmpty()) return;
 
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(32, 32, 32, 32);
-
-        TextView title = new TextView(context);
-        title.setText("Add to Folder");
-        title.setTextColor(context.getColor(R.color.text_primary));
-        title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
-        title.setTypeface(title.getTypeface(), Typeface.BOLD);
-        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        titleParams.bottomMargin = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
-        title.setLayoutParams(titleParams);
-        layout.addView(title);
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_folder_picker, null);
 
         AlertDialog dialog = new AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog)
-                .setView(layout)
+                .setView(dialogView)
                 .create();
 
-        int spacing = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
-        int cardHeight = context.getResources().getDimensionPixelSize(R.dimen.app_card_height);
-
-        for (int i = 0; i < folders.size(); i++) {
-            FolderStore.FolderData folder = folders.get(i);
-            TextView btn = new TextView(context);
+        LinearLayout folderContainer = dialogView.findViewById(R.id.folderContainer);
+        for (FolderStore.FolderData folder : folders) {
+            TextView btn = (TextView) LayoutInflater.from(context)
+                    .inflate(R.layout.item_dialog_button, folderContainer, false);
             btn.setText(folder.label);
-            btn.setBackgroundResource(R.drawable.bg_button);
-            btn.setGravity(Gravity.CENTER);
-            btn.setTextColor(context.getColor(R.color.text_primary));
-            btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
-            if (i < folders.size() - 1) {
-                lp.bottomMargin = spacing;
-            }
-            btn.setLayoutParams(lp);
-
             btn.setOnClickListener(v -> {
                 folderStore.addToFolder(folder.id, app.packageName);
                 dialog.dismiss();
@@ -1166,23 +1090,10 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     folderChangedListener.onFolderChanged();
                 }
             });
-
-            layout.addView(btn);
+            folderContainer.addView(btn);
         }
 
-        // Cancel button
-        TextView btnCancel = new TextView(context);
-        btnCancel.setText("Cancel");
-        btnCancel.setBackgroundResource(R.drawable.bg_button);
-        btnCancel.setGravity(Gravity.CENTER);
-        btnCancel.setTextColor(context.getColor(R.color.text_primary));
-        btnCancel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-        LinearLayout.LayoutParams cancelLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, cardHeight);
-        cancelLp.topMargin = spacing;
-        btnCancel.setLayoutParams(cancelLp);
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
-        layout.addView(btnCancel);
+        dialogView.findViewById(R.id.btnFolderPickerCancel).setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }

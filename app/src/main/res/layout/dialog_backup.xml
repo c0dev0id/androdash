@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/dialog_padding">
+
+    <TextView
+        style="@style/Widget.Androdash.DialogTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/dialog_section_spacing"
+        android:text="Backup" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:divider="@drawable/divider_spacing"
+        android:showDividers="middle">
+
+        <TextView
+            android:id="@+id/btnBackupExport"
+            style="@style/Widget.Androdash.DialogButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height"
+            android:text="Export" />
+
+        <TextView
+            android:id="@+id/btnBackupImport"
+            style="@style/Widget.Androdash.DialogButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height"
+            android:text="Import" />
+
+        <TextView
+            android:id="@+id/btnBackupCancel"
+            style="@style/Widget.Androdash.DialogButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height"
+            android:text="Cancel" />
+
+    </LinearLayout>
+
+</LinearLayout>
