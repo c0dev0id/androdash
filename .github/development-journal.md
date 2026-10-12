@@ -6,7 +6,7 @@
 - **Platform**: Android (minSdk 34, targets modern Android)
 - **UI**: Programmatic layouts (no XML for main UI), RecyclerView + GridLayoutManager for app grid
 - **Build**: AGP via CI only — local Gradle builds are blocked by proxy/network restrictions
-- **Input**: Broadcast intents (`com.thorkracing.wireddevices.keypress`) for remote/joystick; `dispatchKeyEvent` for physical keyboards
+- **Input**: `dispatchKeyEvent` for both physical keyboards and the DMD remote (which enumerates as a USB-HID keyboard)
 
 ## Key Decisions
 
@@ -49,6 +49,9 @@ Additionally, ENTER key handling in the broadcast receiver uses a scoped `post()
 
 **Earlier fixes still in effect**: `onGenericMotionEvent` consumes `SOURCE_JOYSTICK` events at Activity level (prevents RecyclerView joystick-scroll from recycling focused items). Joy neutral sentinel check accepts `"Y0"` and `"X0"` in addition to `"Y0X0"` (matches hardware that releases axes independently).
 
+### DMD Remote Switched to HID Key Events (2026-10-12)
+The DMD companion app now signature-protects its `com.thorkracing.wireddevices.keypress` broadcast, so third-party apps cannot receive it. The remote instead emits plain HID key events: D-pad for the joystick, Enter for button 1, Escape for button 2. The `BroadcastReceiver`, its lifecycle registration, and the 100 ms timestamp hack that dropped the duplicate KeyEvent were all removed. The framework's own focus traversal handles D-pad; `dispatchKeyEvent` already handled Enter/Escape for keyboards. `dispatchKeyEvent` now returns early for any `ACTION_DOWN` with `getRepeatCount() > 0` so a held button acts once. This supersedes the "Remote Focus Handling Architecture" and "HID Suppression Block Removed" entries below: with input going through `ViewRootImpl`, touch mode exits on its own and none of the broadcast-specific focus workarounds apply.
+
 ### Per-app hide UI: two independent toggles (2026-05-07)
 The app long-press dialog used a single tri-state TextView (`btnHideShow`) that cycled show → hide → hide-from-history → show, dismissing the dialog on every press. Reaching the third state required re-opening the dialog and a config-mode detour because the just-hidden app vanished from the grid.
 
@@ -74,7 +77,7 @@ The old `dispatchKeyEvent` contained a block that suppressed DPAD/Enter/Escape k
 - **Letter bar**: tappable/navigable character buttons that progressively filter the app list; supports beginning, anywhere, and fuzzy match modes
 - **Folder support**: group apps into named folders with custom icons
 - **History**: recently launched apps shown at top of grid (with per-app opt-out)
-- **Remote control**: full navigation via andRemote2 joystick (360° mode) and button remotes using the `com.thorkracing.wireddevices.keypress` broadcast protocol
+- **Remote control**: DMD remote drives the same key path as a physical keyboard (D-pad, Enter, Escape)
 - **Keyboard navigation**: arrow keys, Enter, Escape, Backspace, and letter keys all work from a physical keyboard
 - **Hidden apps**: apps can be hidden from the grid or excluded from history independently
 - **Config mode**: gear button enters settings screen within the launcher

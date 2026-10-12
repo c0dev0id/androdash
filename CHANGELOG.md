@@ -18,6 +18,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Backup/restore now preserves the per-app "hide from history" flag. The export and import paths previously round-tripped only `hidden_packages` and silently dropped `history_excluded_packages`. Backups taken before this change can still be imported — the missing key is treated as empty.
 
 ### Removed
-- DMD wired remote control support (broadcast-based D-pad navigation).
+- DMD remote broadcast listener. The DMD companion app now signature-protects its keypress broadcast, so the app can no longer receive it. The remote's D-pad, Enter and Escape are handled as regular key events instead; held buttons no longer auto-repeat.
 - The unused `KILL_BACKGROUND_PROCESSES` permission. It was declared in the manifest but never used by any code path.
 - The `QUERY_ALL_PACKAGES` permission. The app only enumerates launchable apps, which the manifest `<queries>` block already covers, so the broad permission was never required.

@@ -22,7 +22,7 @@ devices with hardware remotes.
 - **Hide apps** — Hide apps from the grid and/or from history, without uninstalling.
 - **Long-press menu** — App shortcuts, hide toggles, add to folder, uninstall, and app info.
 - **Configurable letterbar** — Place the letter bar on any edge; the grid adapts.
-- **Hardware remote** — Navigate focus with a joystick remote; select and back buttons supported.
+- **Hardware remote** — Navigate with a DMD remote or any HID keyboard: D-pad moves focus, Enter selects, Escape goes back.
 - **Backup & restore** — Save and restore settings, folders, bookmarks, and hidden apps.
 - **Dark theme** — Dark interface with orange accents.
 - **Auto-update** — Check for and install nightly builds from the config panel.
