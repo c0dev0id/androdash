@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Physical/Bluetooth keyboard support: typing a letter selects it on the letter bar, Backspace removes the last selected letter, Escape clears all selected letters, arrow keys move focus freely across the letter bar and app grid, and Enter activates the focused item.
 
 ### Changed
+- Nightly builds now carry a distinct, increasing `versionCode` (the CI run number) and a `versionName` of the form `nightly-<commit>`. Previously every build was `1` / `1.0`.
 - App long-press dialog: replaced the cycling "Hide / Hide from History / Show" button with two independent toggles ("Hide from app list", "Hide from history") under a "Hide app:" label. Toggles persist immediately and the dialog stays open, so any combination is reachable in one click without re-navigating to the app.
 
 ### Fixed

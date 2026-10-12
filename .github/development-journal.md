@@ -10,6 +10,16 @@
 
 ## Key Decisions
 
+### Versioning and permissions driven by Play Protect review (2026-10-12)
+
+The app was flagged by Google Play Protect. A comparison against motoLauncher (same signing key, same updater, not flagged) left three differences, all removed:
+
+- `KILL_BACKGROUND_PROCESSES` was declared but unused.
+- `QUERY_ALL_PACKAGES` was declared but unnecessary: all enumeration uses `queryIntentActivities` for MAIN/LAUNCHER, which the `<queries>` element already covers.
+- Every nightly shipped as `versionCode 1` / `versionName "1.0"`, so one package name appeared as many unrelated binaries claiming the same version. CI now passes `-PappVersionCode=$GITHUB_RUN_NUMBER` and `-PappVersionName=nightly-<sha>`; `build.gradle` falls back to `1` / `dev-local` when the properties are absent.
+
+The in-app updater still compares `BuildConfig.GIT_HASH` against the release asset name, not `versionCode`.
+
 ### Native Android Focus Traversal (2026-04-14)
 Replaced the custom `focusedAvailableIndex` integer tracking in `LetterBar` with Android's native `View.focusSearch()` + `requestFocus()` system.
 

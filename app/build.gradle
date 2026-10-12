@@ -14,8 +14,10 @@ android {
         applicationId "de.codevoid.androdash"
         minSdk 34
         targetSdk 35
-        versionCode 1
-        versionName "1.0"
+        // CI passes -PappVersionCode (run number) and -PappVersionName so that
+        // every published build carries a distinct, increasing version.
+        versionCode project.findProperty("appVersionCode")?.toInteger() ?: 1
+        versionName project.findProperty("appVersionName") ?: "dev-local"
 
         def gitHash = providers.exec {
             commandLine 'git', 'rev-parse', '--short=7', 'HEAD'
