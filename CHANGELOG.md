@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Nightly builds now carry a distinct, increasing `versionCode` (the CI run number) and a `versionName` of the form `nightly-<commit>`. Previously every build was `1` / `1.0`.
-- App long-press dialog: replaced the cycling "Hide / Hide from History / Show" button with two independent toggles ("Hide from app list", "Hide from history") under a "Hide app:" label. Toggles persist immediately and the dialog stays open, so any combination is reachable in one click without re-navigating to the app.
+- All dialogs share one visual style. The Backup and Add-to-Folder dialogs used smaller button text, a bold title and pixel-based padding that did not match the other dialogs; every dialog now has the same title size, button style, padding and item spacing. Dialog width is 90% of the display on narrow screens and a fixed 480dp on landscape phones and tablets, instead of always 90%.
+- App long-press dialog: replaced the cycling "Hide / Hide from History / Show" button with two independent toggles ("Hide from app list", "Hide from history") under a "Hide app" label. Toggles persist immediately and the dialog stays open, so any combination is reachable in one click without re-navigating to the app.
 
 ### Fixed
 - Apps no longer drop out of their folder when updated. The package-removed receiver now skips folder cleanup when the broadcast carries `EXTRA_REPLACING`, so updates (which fire REMOVED+ADDED) preserve folder membership.

@@ -8,7 +8,7 @@ Androdash is a launcher for devices where scrolling a grid is slow or impractica
 
 - **Language**: Java
 - **Platform**: Android (minSdk 34, targets modern Android)
-- **UI**: Programmatic layouts (no XML for main UI), RecyclerView + GridLayoutManager for app grid
+- **UI**: Programmatic layout for the main screen, RecyclerView + GridLayoutManager for the app grid; dialogs are XML layouts (`res/layout/dialog_*.xml`) shown through `AlertDialog.Builder(context, R.style.Theme_Androdash_Dialog).setView(...)`
 - **Build**: AGP via CI only — local Gradle builds are blocked by proxy/network restrictions
 - **Input**: `dispatchKeyEvent` in `MainActivity` for every key source: physical/Bluetooth keyboards and the DMD remote, which enumerates as a USB-HID keyboard
 
@@ -63,6 +63,14 @@ The app long-press dialog used a single tri-state TextView (`btnHideShow`) that 
 `HiddenAppsStore` already kept two independent sets (`hidden_packages`, `history_excluded_packages`); the tri-state was an artificial UX-layer mutual exclusion. The store now exposes `setHidden(pkg, bool)` and `setExcludedFromHistory(pkg, bool)` and lets both flags be true simultaneously. The dialog has two TextView toggles ("Hide from app list", "Hide from history") that swap between `bg_button` and `bg_button_selected` on click — the selected drawable is already a state-list selector, so focus styling for remote-control nav works without extra drawables. Toggles persist immediately and fire the existing `onAppHiddenChanged` listener so the grid refreshes live behind the dialog. The dialog only dismisses on the explicit "Close" button.
 
 `MainActivity.refreshDisplayedApps()` already AND-ed both flags in its history filter and gated the grid filter on `isHidden` only, so all four flag combinations were correctly handled with no filter changes. Existing user data carries forward unchanged because the legacy three-way state is a strict subset of the new state space.
+
+### Dialog styling conventions (2026-10-12)
+Dialogs had drifted apart: two were built in Java with pixel padding and different text sizes, every layout repeated the full button styling per view, and each `show*Dialog` method set the window background and forced the window to 90% of the display width after `show()`. The conventions now are:
+
+- **Window chrome comes from the theme.** `Theme.Androdash.Dialog` sets `android:windowBackground` to `bg_dialog` and `windowMinWidthMajor`/`windowMinWidthMinor` to `@dimen/dialog_min_width` (90% of the display in `values/`, 480dp in `values-w600dp/`, which covers landscape phones and tablets). No dialog touches `Window` or `WindowManager.LayoutParams`. Min width was chosen over `windowFixedWidth*` deliberately: AppCompat's `ContentFrameLayout` clamps a fixed width to the measure spec of `ViewRootImpl`'s first pass (`config_prefDialogWidth`, 320dp on phones), whereas a min width is applied as an exact remeasure and reports `MEASURED_STATE_TOO_SMALL`, which makes the window grow to the requested size.
+- **Widgets use shared styles** from `values/styles.xml`: `Widget.Androdash.DialogTitle`, `DialogLabel`, `DialogButton`, `DialogButton.Primary` (orange, for Save) and `DialogInput`. Layouts carry only `id`, `layout_*`, `text` and per-instance attributes such as `inputType`.
+- **Every dialog has the same skeleton**: a vertical `LinearLayout` with `@dimen/dialog_padding`; a header (the `dialog_header.xml` include with `dialogIcon`/`dialogTitle`, or a `DialogTitle` text) with `@dimen/dialog_section_spacing` below it; a body `LinearLayout` with `android:divider="@drawable/divider_spacing"` and `showDividers="middle"`; optionally an action row with `dialog_section_spacing` above it. Items are `@dimen/app_card_height` tall.
+- **Spacing between items is a transparent divider, not margins.** `divider_spacing` is a `grid_spacing`-sized shape. `LinearLayout` skips `GONE` children when placing dividers, so optional buttons (for example "Add to Folder") need no margin handling, and rows added at runtime (`item_shortcut.xml`, `item_dialog_button.xml`) are inflated into the container with no `LayoutParams` code.
 
 ### Package-update vs. uninstall must check `EXTRA_REPLACING` (2026-05-07)
 App updates fire `ACTION_PACKAGE_REMOVED` followed by `ACTION_PACKAGE_ADDED`, both with `EXTRA_REPLACING=true`. Treating `REMOVED` as a real uninstall means destructive cleanup runs on every update. The package receiver now guards `folderStore.removePackageFromAllFolders(...)` behind a `!EXTRA_REPLACING` check; the apps-dirty flag is still set unconditionally so icon/label changes still trigger a reload. Any future per-package state (bookmarks, history, hidden flags) added to the same receiver must apply the same guard.
