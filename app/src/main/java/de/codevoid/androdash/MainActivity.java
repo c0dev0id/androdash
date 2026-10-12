@@ -10,7 +10,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -92,61 +91,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
-
-    private static final String DMD_ACTION        = "com.thorkracing.wireddevices.keypress";
-    private static final String DMD_EXTRA_KEY     = "key_press";
-    private static final String DMD_EXTRA_REPEAT  = "repeat";
-    private static final String DMD_EXTRA_JOY     = "joy";
-    private static final int    DMD_KEY_BUTTON1   = 66;
-    private static final int    DMD_KEY_BUTTON2   = 111;
-
-    // The DMD remote enumerates as a USB-HID keyboard, so each button press
-    // arrives both as a broadcast and as a duplicate KeyEvent in dispatchKeyEvent.
-    // Timestamp set by remoteListener; checked in dispatchKeyEvent to drop the dup.
-    private long lastRemoteBroadcastUptime = 0L;
-
-    private final BroadcastReceiver remoteListener = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (letterBar == null) return;
-
-            if (intent.hasExtra(DMD_EXTRA_KEY) && intent.getIntExtra(DMD_EXTRA_REPEAT, 0) == 0) {
-                int keyCode = intent.getIntExtra(DMD_EXTRA_KEY, 0);
-                if (keyCode == DMD_KEY_BUTTON1) {
-                    lastRemoteBroadcastUptime = SystemClock.uptimeMillis();
-                    View focused = getCurrentFocus();
-                    if (focused != null) focused.performClick();
-                } else if (keyCode == DMD_KEY_BUTTON2) {
-                    lastRemoteBroadcastUptime = SystemClock.uptimeMillis();
-                    if (letterBar.hasSelection()) {
-                        letterBar.clearSelection();
-                    } else {
-                        letterBar.focusFirstAvailable();
-                    }
-                }
-            }
-
-            String joy = intent.getStringExtra(DMD_EXTRA_JOY);
-            if (joy != null) {
-                boolean vertical   = joy.startsWith("U5") || joy.startsWith("D5");
-                boolean horizontal = joy.endsWith("L5")   || joy.endsWith("R5");
-                if (!(vertical && horizontal)) {
-                    if (joy.startsWith("U5")) moveFocus(View.FOCUS_UP);
-                    if (joy.startsWith("D5")) moveFocus(View.FOCUS_DOWN);
-                    if (joy.endsWith("L5"))   moveFocus(View.FOCUS_LEFT);
-                    if (joy.endsWith("R5"))   moveFocus(View.FOCUS_RIGHT);
-                }
-            }
-        }
-    };
-
-    private void moveFocus(int direction) {
-        View focused = getCurrentFocus();
-        View next = focused != null
-                ? focused.focusSearch(direction)
-                : rootLayout.focusSearch(direction);
-        if (next != null) next.requestFocus(direction);
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -337,8 +281,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        registerReceiver(remoteListener, new IntentFilter(DMD_ACTION), Context.RECEIVER_EXPORTED);
-
         if (letterBar == null) return;
 
         // Exit config mode if returning from background
@@ -362,9 +304,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         isResumed = false;
-        try {
-            unregisterReceiver(remoteListener);
-        } catch (Exception ignored) {}
     }
 
     @Override
@@ -712,16 +651,11 @@ public class MainActivity extends AppCompatActivity {
         if (letterBar == null || event.getAction() != KeyEvent.ACTION_DOWN) {
             return super.dispatchKeyEvent(event);
         }
-        int keyCode = event.getKeyCode();
-
-        // Drop the duplicate KeyEvent the DMD remote emits alongside its broadcast.
-        // BUTTON1/BUTTON2 share keycodes with ENTER/ESCAPE; if the broadcast handler
-        // just actioned this press, suppress the follow-up KeyEvent so we don't
-        // perform the action twice (which would select then immediately deselect).
-        if ((keyCode == DMD_KEY_BUTTON1 || keyCode == DMD_KEY_BUTTON2)
-                && SystemClock.uptimeMillis() - lastRemoteBroadcastUptime < 100L) {
+        // Ignore auto-repeat: a held key must act exactly once.
+        if (event.getRepeatCount() > 0) {
             return true;
         }
+        int keyCode = event.getKeyCode();
 
         // Backspace → remove last selected letter
         if (keyCode == KeyEvent.KEYCODE_DEL) {
