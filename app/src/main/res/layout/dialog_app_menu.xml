@@ -3,62 +3,34 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="@dimen/dialog_padding">
 
-    <!-- Header: app icon + label -->
+    <include layout="@layout/dialog_header" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:divider="@drawable/divider_spacing"
+        android:showDividers="middle">
 
-        <ImageView
-            android:id="@+id/dialogAppIcon"
-            android:layout_width="@dimen/app_icon_size"
-            android:layout_height="@dimen/app_icon_size"
-            android:scaleType="fitCenter"
-            android:contentDescription="@null" />
-
-        <TextView
-            android:id="@+id/dialogAppLabel"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="@dimen/card_padding"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_size_large"
-            android:fontFamily="@font/apotek" />
-
-    </LinearLayout>
-
-    <!-- Body: two columns -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <!-- Left column: shortcuts -->
+        <!-- Shortcuts -->
         <LinearLayout
-            android:id="@+id/leftColumn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginEnd="@dimen/grid_spacing">
+            android:divider="@drawable/divider_spacing"
+            android:showDividers="middle">
 
             <TextView
+                style="@style/Widget.Androdash.DialogLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Shortcuts"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek"
-                android:layout_marginBottom="@dimen/grid_spacing" />
+                android:text="Shortcuts" />
 
             <ScrollView
+                android:id="@+id/shortcutScroll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -66,110 +38,78 @@
                     android:id="@+id/shortcutContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical" />
+                    android:orientation="vertical"
+                    android:divider="@drawable/divider_spacing"
+                    android:showDividers="middle" />
 
             </ScrollView>
 
             <TextView
                 android:id="@+id/noShortcutsText"
+                style="@style/Widget.Androdash.DialogButton"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/app_card_height"
-                android:background="@drawable/bg_button"
-                android:gravity="center"
                 android:text="No shortcuts"
                 android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek"
                 android:visibility="gone" />
 
         </LinearLayout>
 
-        <!-- Right column: action buttons -->
+        <!-- Actions -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="@dimen/grid_spacing">
+            android:divider="@drawable/divider_spacing"
+            android:showDividers="middle">
 
             <TextView
+                style="@style/Widget.Androdash.DialogLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Hide app:"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek"
-                android:layout_marginBottom="@dimen/grid_spacing" />
+                android:text="Hide app" />
 
             <TextView
                 android:id="@+id/btnHideFromList"
+                style="@style/Widget.Androdash.DialogButton"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/app_card_height"
-                android:background="@drawable/bg_button"
-                android:gravity="center"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek"
-                android:layout_marginBottom="@dimen/grid_spacing" />
+                android:layout_height="@dimen/app_card_height" />
 
             <TextView
                 android:id="@+id/btnHideFromHistory"
+                style="@style/Widget.Androdash.DialogButton"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/app_card_height"
-                android:background="@drawable/bg_button"
-                android:gravity="center"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek"
-                android:layout_marginBottom="@dimen/grid_spacing" />
+                android:layout_height="@dimen/app_card_height" />
 
             <TextView
                 android:id="@+id/btnUninstall"
+                style="@style/Widget.Androdash.DialogButton"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/app_card_height"
-                android:background="@drawable/bg_button"
-                android:gravity="center"
-                android:text="Uninstall"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek"
-                android:layout_marginBottom="@dimen/grid_spacing" />
+                android:text="Uninstall" />
 
             <TextView
                 android:id="@+id/btnAppInfo"
+                style="@style/Widget.Androdash.DialogButton"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/app_card_height"
-                android:background="@drawable/bg_button"
-                android:gravity="center"
-                android:text="App Info"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek"
-                android:layout_marginBottom="@dimen/grid_spacing" />
+                android:text="App Info" />
 
             <TextView
                 android:id="@+id/btnAddToFolder"
+                style="@style/Widget.Androdash.DialogButton"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/app_card_height"
-                android:background="@drawable/bg_button"
-                android:gravity="center"
                 android:text="Add to Folder"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek"
-                android:layout_marginBottom="@dimen/grid_spacing"
                 android:visibility="gone" />
 
             <TextView
                 android:id="@+id/btnCancel"
+                style="@style/Widget.Androdash.DialogButton"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/app_card_height"
-                android:background="@drawable/bg_button"
-                android:gravity="center"
-                android:text="Close"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/text_size_small"
-                android:fontFamily="@font/apotek" />
+                android:text="Close" />
 
         </LinearLayout>
 

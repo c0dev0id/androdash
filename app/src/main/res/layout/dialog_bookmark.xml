@@ -3,108 +3,89 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="@dimen/dialog_padding">
 
     <TextView
         android:id="@+id/bookmarkDialogTitle"
+        style="@style/Widget.Androdash.DialogTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add Bookmark"
-        android:textColor="@color/text_primary"
-        android:textSize="@dimen/text_size_large"
-        android:fontFamily="@font/apotek"
-        android:layout_marginBottom="12dp" />
-
-    <EditText
-        android:id="@+id/bookmarkLabel"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_card_height"
-        android:hint="Label"
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_secondary"
-        android:textSize="@dimen/text_size_small"
-        android:fontFamily="@font/apotek"
-        android:background="@drawable/bg_button"
-        android:paddingStart="@dimen/card_padding"
-        android:paddingEnd="@dimen/card_padding"
-        android:inputType="text"
-        android:maxLines="1"
-        android:layout_marginBottom="@dimen/grid_spacing" />
+        android:layout_marginBottom="@dimen/dialog_section_spacing"
+        android:text="Add Bookmark" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="@dimen/grid_spacing">
+        android:orientation="vertical"
+        android:divider="@drawable/divider_spacing"
+        android:showDividers="middle">
 
-        <ImageView
-            android:id="@+id/bookmarkIconPreview"
-            android:layout_width="@dimen/app_icon_size"
-            android:layout_height="@dimen/app_icon_size"
-            android:scaleType="fitCenter"
-            android:contentDescription="@null" />
-
-        <TextView
-            android:id="@+id/btnPickImage"
-            android:layout_width="0dp"
+        <EditText
+            android:id="@+id/bookmarkLabel"
+            style="@style/Widget.Androdash.DialogInput"
+            android:layout_width="match_parent"
             android:layout_height="@dimen/app_card_height"
-            android:layout_weight="1"
-            android:layout_marginStart="@dimen/grid_spacing"
-            android:background="@drawable/bg_button"
-            android:gravity="center"
-            android:text="Choose Image"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_size_small"
-            android:fontFamily="@font/apotek" />
+            android:hint="Label"
+            android:inputType="text" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:divider="@drawable/divider_spacing"
+            android:showDividers="middle">
+
+            <ImageView
+                android:id="@+id/bookmarkIconPreview"
+                android:layout_width="@dimen/app_icon_size"
+                android:layout_height="@dimen/app_icon_size"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:id="@+id/btnPickImage"
+                style="@style/Widget.Androdash.DialogButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/app_card_height"
+                android:layout_weight="1"
+                android:text="Choose Image" />
+
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/bookmarkUrl"
+            style="@style/Widget.Androdash.DialogInput"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height"
+            android:hint="https://..."
+            android:inputType="textUri" />
 
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/bookmarkUrl"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_card_height"
-        android:hint="https://..."
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_secondary"
-        android:textSize="@dimen/text_size_small"
-        android:fontFamily="@font/apotek"
-        android:background="@drawable/bg_button"
-        android:paddingStart="@dimen/card_padding"
-        android:paddingEnd="@dimen/card_padding"
-        android:inputType="textUri"
-        android:maxLines="1"
-        android:layout_marginBottom="12dp" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_marginTop="@dimen/dialog_section_spacing"
+        android:orientation="horizontal"
+        android:divider="@drawable/divider_spacing"
+        android:showDividers="middle">
 
         <TextView
             android:id="@+id/btnBookmarkCancel"
+            style="@style/Widget.Androdash.DialogButton"
             android:layout_width="0dp"
             android:layout_height="@dimen/app_card_height"
             android:layout_weight="1"
-            android:background="@drawable/bg_button"
-            android:gravity="center"
-            android:text="Cancel"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_size_small"
-            android:fontFamily="@font/apotek"
-            android:layout_marginEnd="@dimen/grid_spacing" />
+            android:text="Cancel" />
 
         <TextView
             android:id="@+id/btnBookmarkSave"
+            style="@style/Widget.Androdash.DialogButton.Primary"
             android:layout_width="0dp"
             android:layout_height="@dimen/app_card_height"
             android:layout_weight="1"
-            android:background="@drawable/bg_button_selected"
-            android:gravity="center"
-            android:text="Save"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_size_small"
-            android:fontFamily="@font/apotek" />
+            android:text="Save" />
 
     </LinearLayout>
 

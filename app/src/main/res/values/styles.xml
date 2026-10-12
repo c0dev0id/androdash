@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dialog widgets. Every dialog layout builds on these so text, colors and
+         button chrome stay identical across dialogs. Layout attributes stay in the
+         layouts; items are 64dp (app_card_height) tall and spaced with
+         divider_spacing on their parent LinearLayout. -->
+
+    <style name="Widget.Androdash.DialogTitle" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/apotek</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_size_large</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="Widget.Androdash.DialogLabel" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/apotek</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">@dimen/text_size_small</item>
+    </style>
+
+    <style name="Widget.Androdash.DialogButton" parent="Widget.AppCompat.TextView">
+        <item name="android:background">@drawable/bg_button</item>
+        <item name="android:gravity">center</item>
+        <item name="android:fontFamily">@font/apotek</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_size_small</item>
+    </style>
+
+    <style name="Widget.Androdash.DialogButton.Primary">
+        <item name="android:background">@drawable/bg_button_selected</item>
+    </style>
+
+    <style name="Widget.Androdash.DialogInput" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/bg_button</item>
+        <item name="android:paddingStart">@dimen/card_padding</item>
+        <item name="android:paddingEnd">@dimen/card_padding</item>
+        <item name="android:fontFamily">@font/apotek</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="android:textSize">@dimen/text_size_small</item>
+        <item name="android:maxLines">1</item>
+    </style>
+</resources>

@@ -655,8 +655,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 .setView(dialogView)
                 .create();
 
-        ImageView headerIcon = dialogView.findViewById(R.id.dialogBookmarkIcon);
-        TextView headerLabel = dialogView.findViewById(R.id.dialogBookmarkLabel);
+        ImageView headerIcon = dialogView.findViewById(R.id.dialogIcon);
+        TextView headerLabel = dialogView.findViewById(R.id.dialogTitle);
         headerIcon.setImageDrawable(app.icon);
         headerLabel.setText(app.label);
 
@@ -774,8 +774,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 .setView(dialogView)
                 .create();
 
-        ImageView headerIcon = dialogView.findViewById(R.id.dialogAppIcon);
-        TextView headerLabel = dialogView.findViewById(R.id.dialogAppLabel);
+        ImageView headerIcon = dialogView.findViewById(R.id.dialogIcon);
+        TextView headerLabel = dialogView.findViewById(R.id.dialogTitle);
         headerIcon.setImageDrawable(app.icon);
         headerLabel.setText(app.label);
 
@@ -883,10 +883,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
                 if (shortcuts != null && !shortcuts.isEmpty()) {
                     hasShortcuts = true;
-                    int spacing = context.getResources().getDimensionPixelSize(R.dimen.grid_spacing);
 
-                    for (int i = 0; i < shortcuts.size(); i++) {
-                        ShortcutInfo shortcut = shortcuts.get(i);
+                    for (ShortcutInfo shortcut : shortcuts) {
                         View item = LayoutInflater.from(context)
                                 .inflate(R.layout.item_shortcut, shortcutContainer, false);
 
@@ -909,17 +907,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                             dialog.dismiss();
                         });
 
-                        if (i > 0) {
-                            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) item.getLayoutParams();
-                            if (lp == null) {
-                                lp = new LinearLayout.LayoutParams(
-                                        ViewGroup.LayoutParams.MATCH_PARENT,
-                                        context.getResources().getDimensionPixelSize(R.dimen.app_card_height));
-                            }
-                            lp.topMargin = spacing;
-                            item.setLayoutParams(lp);
-                        }
-
                         shortcutContainer.addView(item);
                     }
                 }
@@ -929,6 +916,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         if (!hasShortcuts) {
+            dialogView.findViewById(R.id.shortcutScroll).setVisibility(View.GONE);
             noShortcutsText.setVisibility(View.VISIBLE);
             if (launcherApps == null || !launcherApps.hasShortcutHostPermission()) {
                 noShortcutsText.setText("Set as default launcher\nfor shortcuts");
@@ -1019,8 +1007,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 .setView(dialogView)
                 .create();
 
-        ImageView headerIcon = dialogView.findViewById(R.id.dialogFolderIcon);
-        TextView headerLabel = dialogView.findViewById(R.id.dialogFolderLabel);
+        ImageView headerIcon = dialogView.findViewById(R.id.dialogIcon);
+        TextView headerLabel = dialogView.findViewById(R.id.dialogTitle);
         if (app.icon != null) {
             headerIcon.setImageDrawable(app.icon);
         } else {

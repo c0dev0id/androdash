@@ -3,94 +3,52 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="@dimen/dialog_padding">
 
-    <!-- Header: bookmark icon + label -->
+    <include layout="@layout/dialog_header" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
-
-        <ImageView
-            android:id="@+id/dialogBookmarkIcon"
-            android:layout_width="@dimen/app_icon_size"
-            android:layout_height="@dimen/app_icon_size"
-            android:scaleType="fitCenter"
-            android:contentDescription="@null" />
+        android:orientation="vertical"
+        android:divider="@drawable/divider_spacing"
+        android:showDividers="middle">
 
         <TextView
-            android:id="@+id/dialogBookmarkLabel"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="@dimen/card_padding"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_size_large"
-            android:fontFamily="@font/apotek" />
+            android:id="@+id/btnHideFromHistory"
+            style="@style/Widget.Androdash.DialogButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height" />
+
+        <TextView
+            android:id="@+id/btnEditBookmark"
+            style="@style/Widget.Androdash.DialogButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height"
+            android:text="Edit" />
+
+        <TextView
+            android:id="@+id/btnDeleteBookmark"
+            style="@style/Widget.Androdash.DialogButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height"
+            android:text="Delete" />
+
+        <TextView
+            android:id="@+id/btnAddToFolder"
+            style="@style/Widget.Androdash.DialogButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height"
+            android:text="Add to Folder"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/btnCancelBookmark"
+            style="@style/Widget.Androdash.DialogButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_card_height"
+            android:text="Cancel" />
 
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/btnHideFromHistory"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_card_height"
-        android:background="@drawable/bg_button"
-        android:gravity="center"
-        android:textColor="@color/text_primary"
-        android:textSize="@dimen/text_size_small"
-        android:fontFamily="@font/apotek"
-        android:layout_marginBottom="@dimen/grid_spacing" />
-
-    <TextView
-        android:id="@+id/btnEditBookmark"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_card_height"
-        android:background="@drawable/bg_button"
-        android:gravity="center"
-        android:text="Edit"
-        android:textColor="@color/text_primary"
-        android:textSize="@dimen/text_size_small"
-        android:fontFamily="@font/apotek"
-        android:layout_marginBottom="@dimen/grid_spacing" />
-
-    <TextView
-        android:id="@+id/btnDeleteBookmark"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_card_height"
-        android:background="@drawable/bg_button"
-        android:gravity="center"
-        android:text="Delete"
-        android:textColor="@color/text_primary"
-        android:textSize="@dimen/text_size_small"
-        android:fontFamily="@font/apotek"
-        android:layout_marginBottom="@dimen/grid_spacing" />
-
-    <TextView
-        android:id="@+id/btnAddToFolder"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_card_height"
-        android:background="@drawable/bg_button"
-        android:gravity="center"
-        android:text="Add to Folder"
-        android:textColor="@color/text_primary"
-        android:textSize="@dimen/text_size_small"
-        android:fontFamily="@font/apotek"
-        android:layout_marginBottom="@dimen/grid_spacing"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/btnCancelBookmark"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_card_height"
-        android:background="@drawable/bg_button"
-        android:gravity="center"
-        android:text="Cancel"
-        android:textColor="@color/text_primary"
-        android:textSize="@dimen/text_size_small"
-        android:fontFamily="@font/apotek" />
 
 </LinearLayout>
