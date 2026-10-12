@@ -26,8 +26,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -646,14 +644,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         });
 
         dialog.show();
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
-            window.setAttributes(params);
-        }
     }
 
     // ---- Bookmark long-press menu ----
@@ -740,14 +730,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
-            window.setAttributes(params);
-        }
     }
 
     // ---- Favicon download ----
@@ -954,14 +936,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         dialog.show();
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
-            window.setAttributes(params);
-        }
     }
 
     // ---- Folder dialog (Add / Edit) ----
@@ -1034,14 +1008,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         });
 
         dialog.show();
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
-            window.setAttributes(params);
-        }
     }
 
     // ---- Folder long-press menu ----
@@ -1086,14 +1052,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         btnCancelFolder.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
-            window.setAttributes(params);
-        }
     }
 
     // ---- Folder selection dialog ----
@@ -1169,14 +1127,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         layout.addView(btnCancel);
 
         dialog.show();
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
-            window.setAttributes(params);
-        }
     }
 
     private void showFolderSelectionDialog(AppModel app) {
@@ -1247,14 +1197,6 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         layout.addView(btnCancel);
 
         dialog.show();
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
-            window.setAttributes(params);
-        }
     }
 
     // ---- Default folder icon ----

@@ -14,10 +14,12 @@
     </style>
 
     <style name="Theme.Androdash.Dialog" parent="Theme.Material3.DayNight.Dialog">
-        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowBackground">@drawable/bg_dialog</item>
         <item name="android:backgroundDimEnabled">true</item>
         <item name="android:fontFamily">@font/apotek</item>
         <item name="fontFamily">@font/apotek</item>
         <item name="colorSurface">@color/surface_dark</item>
+        <item name="windowMinWidthMajor">@dimen/dialog_min_width</item>
+        <item name="windowMinWidthMinor">@dimen/dialog_min_width</item>
     </style>
 </resources>
