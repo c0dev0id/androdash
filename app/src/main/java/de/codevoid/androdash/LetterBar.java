@@ -42,7 +42,6 @@ public class LetterBar {
     private LetterSortStore letterSortStore;
     private MatchMethodStore matchMethodStore;
     private List<AppModel> lastFilteredApps;
-    private int focusedAvailableIndex = -1; // -1 = no focus; index into available (non-selected) letters
 
     // Folder mode state
     private String activeFolderId = null;
@@ -57,7 +56,6 @@ public class LetterBar {
     public void setApps(List<AppModel> apps) {
         this.allApps = apps;
         selectedLetters.clear();
-        focusedAvailableIndex = -1;
         activeFolderId = null;
         folderContents = null;
         updateButtons();
@@ -98,7 +96,6 @@ public class LetterBar {
         this.activeFolderId = folderId;
         this.folderContents = contents;
         selectedLetters.add(FOLDER_CHAR);
-        focusedAvailableIndex = -1;
         updateButtons();
     }
 
@@ -328,20 +325,6 @@ public class LetterBar {
             }
         }
 
-        // Apply focused background to the focused available letter button
-        int availableCount = 0;
-        for (int i = 0; i < container.getChildCount(); i++) {
-            Button btn = (Button) container.getChildAt(i);
-            String tag = (String) btn.getTag();
-            if (tag != null && tag.startsWith(TAG_AVAILABLE) && !tag.equals(TAG_AVAILABLE + GEAR_CHAR) && !tag.equals(TAG_AVAILABLE + FOLDER_CHAR)) {
-                boolean isFocused = (availableCount == focusedAvailableIndex);
-                if (isFocused) {
-                    btn.setBackgroundResource(R.drawable.bg_button_focused);
-                }
-                availableCount++;
-            }
-        }
-
         if (focusedTag != null) {
             String restoreTag = focusedTag;
             if (!targetTags.contains(focusedTag)) {
@@ -388,64 +371,7 @@ public class LetterBar {
         if (removed == FOLDER_CHAR) {
             clearFolderState();
         }
-        focusedAvailableIndex = -1;
         updateButtons();
-        return true;
-    }
-
-    /** Returns the available (non-selected, non-gear, non-folder) letters from the current button list. */
-    private List<Character> getAvailableLetters() {
-        List<Character> result = new ArrayList<>();
-        for (ButtonSpec spec : computeTargetButtons()) {
-            if (!spec.selected && spec.letter != GEAR_CHAR && spec.letter != FOLDER_CHAR) {
-                result.add(spec.letter);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Moves remote focus to the next available letter (wraps around).
-     * Returns true if there were any available letters to focus.
-     */
-    public boolean focusNext() {
-        List<Character> available = getAvailableLetters();
-        if (available.isEmpty()) return false;
-        if (focusedAvailableIndex < 0 || focusedAvailableIndex >= available.size() - 1) {
-            focusedAvailableIndex = 0;
-        } else {
-            focusedAvailableIndex++;
-        }
-        updateButtons();
-        return true;
-    }
-
-    /**
-     * Moves remote focus to the previous available letter (wraps around).
-     * Returns true if there were any available letters to focus.
-     */
-    public boolean focusPrev() {
-        List<Character> available = getAvailableLetters();
-        if (available.isEmpty()) return false;
-        if (focusedAvailableIndex <= 0) {
-            focusedAvailableIndex = available.size() - 1;
-        } else {
-            focusedAvailableIndex--;
-        }
-        updateButtons();
-        return true;
-    }
-
-    /**
-     * Selects the currently focused available letter.
-     * Returns true if a letter was focused and selected.
-     */
-    public boolean selectFocused() {
-        List<Character> available = getAvailableLetters();
-        if (focusedAvailableIndex < 0 || focusedAvailableIndex >= available.size()) return false;
-        char letter = available.get(focusedAvailableIndex);
-        focusedAvailableIndex = -1;
-        onAvailableLetterClick(letter);
         return true;
     }
 
@@ -475,7 +401,6 @@ public class LetterBar {
 
     public void clearSelection() {
         selectedLetters.clear();
-        focusedAvailableIndex = -1;
         clearFolderState();
         updateButtons();
     }

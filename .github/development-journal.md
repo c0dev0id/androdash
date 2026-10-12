@@ -55,7 +55,7 @@ Lesson from the broadcast era: injecting input from outside the view system mean
 
 ### Native Android Focus Traversal (2026-04-14)
 
-Replaced custom index-based focus tracking in `LetterBar` with `View.focusSearch()` + `requestFocus()`. The custom system only covered the letter bar and had no concept of the app grid; native traversal moves freely between letter buttons and RecyclerView items with no navigation code. Note: `LetterBar` still carries the unused `focusedAvailableIndex` field and the `focusNext()` / `focusPrev()` / `selectFocused()` methods from the old system. Nothing calls them.
+Replaced custom index-based focus tracking in `LetterBar` with `View.focusSearch()` + `requestFocus()`. The custom system only covered the letter bar and had no concept of the app grid; native traversal moves freely between letter buttons and RecyclerView items with no navigation code. The leftover index field and `focusNext()` / `focusPrev()` / `selectFocused()` methods were deleted on 2026-10-12.
 
 ### Per-app hide UI: two independent toggles (2026-05-07)
 The app long-press dialog used a single tri-state TextView (`btnHideShow`) that cycled show → hide → hide-from-history → show, dismissing the dialog on every press. Reaching the third state required re-opening the dialog and a config-mode detour because the just-hidden app vanished from the grid.
